@@ -28,9 +28,9 @@ def check_requirements():
         return False
     
     # Check app file
-    app_path = '/Users/kevin/Downloads/HNscrapper/optimized_enhanced_app.py'
+    app_path = '/Users/kevin/Downloads/HNscrapper/fastapi_enhanced_app.py'
     if not os.path.exists(app_path):
-        print("❌ Optimized app not found!")
+        print("❌ FastAPI app not found!")
         return False
     
     print("✅ All required files present")
@@ -88,7 +88,11 @@ def test_app_import():
         sys.path.insert(0, '/Users/kevin/Downloads/HNscrapper')
         
         # Import components
-        from optimized_enhanced_app import app, OptimizedDatabaseManager, db_manager
+        from fastapi_enhanced_app import app, OptimizedDatabaseManager
+        
+        # Create database manager instance
+        db_path = '/Users/kevin/Downloads/HNscrapper/data/enhanced_hn_articles.db'
+        db_manager = OptimizedDatabaseManager(db_path)
         
         # Quick functionality test
         stats = db_manager.get_basic_stats()
@@ -107,23 +111,24 @@ def test_app_import():
         return False
 
 def launch_app():
-    """Launch the Flask application"""
-    print("🚀 Launching HN Enhanced Scraper...")
+    """Launch the FastAPI application"""
+    print("🚀 Launching HN Enhanced Scraper (FastAPI)...")
     
     try:
         # Change to app directory
         os.chdir('/Users/kevin/Downloads/HNscrapper')
         
         # Start the app
-        print("📡 Starting Flask server...")
+        print("📡 Starting FastAPI server...")
         print("🌐 Homepage will be available at: http://127.0.0.1:8085")
+        print("📖 API Documentation will be available at: http://127.0.0.1:8085/docs")
         print("🧪 Test page will be available at: http://127.0.0.1:8085/test")
         print("\n📝 Press Ctrl+C to stop the server")
         print("-" * 50)
         
         # Start subprocess with live output
         process = subprocess.Popen(
-            [sys.executable, 'optimized_enhanced_app.py'],
+            [sys.executable, 'fastapi_enhanced_app.py'],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True,
@@ -209,7 +214,7 @@ def main():
             return launch_app()
         else:
             print("\n✋ Launch cancelled by user")
-            print("💡 To start manually, run: python optimized_enhanced_app.py")
+            print("💡 To start manually, run: python fastapi_enhanced_app.py")
             return True
     except KeyboardInterrupt:
         print("\n✋ Launch cancelled")

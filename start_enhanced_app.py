@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Direct Flask App Startup for HN Enhanced Scraper
+Direct FastAPI App Startup for HN Enhanced Scraper
 """
 
 import sys
@@ -10,11 +10,11 @@ import os
 sys.path.insert(0, '/Users/kevin/Downloads/HNscrapper')
 
 try:
-    print("🚀 Starting HN Enhanced Scraper...")
+    print("🚀 Starting HN Enhanced Scraper (FastAPI)...")
     print("📍 Current directory:", os.getcwd())
     
-    # Import the optimized app
-    from optimized_enhanced_app import app, OptimizedDatabaseManager
+    # Import the FastAPI app
+    from fastapi_enhanced_app import app, OptimizedDatabaseManager
     
     print("✅ App imported successfully")
     
@@ -37,14 +37,16 @@ try:
     else:
         print("❌ Database file not found")
     
-    # Start the Flask app
+    # Start the FastAPI app with uvicorn
+    import uvicorn
     port = 8085
-    print(f"\n🌐 Starting Flask app on port {port}")
+    print(f"\n🌐 Starting FastAPI app on port {port}")
     print(f"🔗 Homepage: http://127.0.0.1:{port}")
+    print(f"📖 API Documentation: http://127.0.0.1:{port}/docs")
     print(f"🧪 Test page: http://127.0.0.1:{port}/test")
     print("\n📝 Press Ctrl+C to stop")
     
-    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    uvicorn.run(app, host='0.0.0.0', port=port, reload=False)
 
 except ImportError as e:
     print(f"❌ Import error: {e}")

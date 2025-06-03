@@ -1,0 +1,33 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.interpreter.path": "./env/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "python.defaultInterpreterPath": "./env/bin/python",
+        "terminal.integrated.env.osx": {
+            "PYTHONPATH": "${workspaceFolder}",
+            "FLASK_APP": "app.py",
+            "FLASK_ENV": "development"
+        },
+        "terminal.integrated.encoding": "utf8",
+        "files.associations": {
+            "*.py": "python"
+        },
+        "python.formatting.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "editor.formatOnSave": true
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.flake8",
+            "ms-python.black-formatter",
+            "bradlc.vscode-tailwindcss"
+        ]
+    }
+}

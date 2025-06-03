@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HN Enhanced Scraper - AI-Powered Analysis Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #5856D6;
+            --success-color: #34C759;
+            --warning-color: #FF9500;
+            --danger-color: #FF3B30;
+            --bg-primary: #F2F2F7;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --border-color: #D1D1D6;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #E5E5EA 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: var(--bg-secondary);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+
+        .quality-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .quality-high { background: var(--success-color); color: white; }
+        .quality-medium { background: var(--warning-color); color: white; }
+        .quality-low { background: var(--danger-color); color: white; }
+
+        .sentiment-positive { color: var(--success-color); }
+        .sentiment-negative { color: var(--danger-color); }
+        .sentiment-neutral { color: var(--text-secondary); }
+
+        .insight-tag {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin: 0.25rem;
+            display: inline-block;
+        }
+
+        .comment-preview {
+            background: rgba(248, 249, 250, 0.8);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+        }
+
+        .ai-analysis {
+            background: linear-gradient(135deg, rgba(88, 86, 214, 0.1), rgba(0, 122, 255, 0.1));
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .trending-indicator {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .domain-pill {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            margin: 0.25rem;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .domain-pill:hover {
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 20px;
+            padding: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .filter-tabs {
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 16px;
+            padding: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .filter-tab {
+            background: transparent;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .discussion-thread {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 1rem;
+            margin: 1rem 0;
+        }
+
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-brain me-2 text-primary"></i>
+                HN Enhanced AI
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/stats">
+                    <i class="fas fa-chart-bar me-1"></i>Analytics
+                </a>
+                <a class="nav-link" href="/conversations">
+                    <i class="fas fa-comments me-1"></i>Discussions
+                </a>
+                <a class="nav-link" href="/curate">
+                    <i class="fas fa-star me-1"></i>Curated
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- Hero Section with Real-time Metrics -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="text-center mb-4">
+                    <h1 class="display-4 fw-bold text-primary mb-2">
+                        <i class="fas fa-brain me-3"></i>AI-Powered HN Analysis
+                    </h1>
+                    <p class="lead text-muted">Discover insights from Hacker News with advanced AI analysis</p>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <i class="fas fa-newspaper fa-2x mb-2"></i>
+                            <h3 class="mb-1">{{ stats.total_articles or 0 }}</h3>
+                            <small>Analyzed Articles</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <i class="fas fa-comments fa-2x mb-2"></i>
+                            <h3 class="mb-1">{{ stats.total_comments or 0 }}</h3>
+                            <small>Comments Processed</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <i class="fas fa-star fa-2x mb-2"></i>
+                            <h3 class="mb-1">{{ stats.analyzed_comments or 0 }}</h3>
+                            <small>AI Analyzed</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="metric-card">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                            <h3 class="mb-1">{{ "%.1f"|format(stats.avg_discussion_quality or 0) }}</h3>
+                            <small>Avg Quality Score</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="search-container">
+                    <form method="GET" class="row g-3 align-items-center">
+                        <div class="col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" name="search" 
+                                       value="{{ search_query }}" placeholder="Search articles, insights...">
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <select class="form-select" name="domain">
+                                <option value="all">All Domains</option>
+                                {% for domain in domains[:20] %}
+                                <option value="{{ domain }}" {% if domain == domain_filter %}selected{% endif %}>
+                                    {{ domain }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <select class="form-select" name="sort">
+                                <option value="quality" {% if sort_by == 'quality' %}selected{% endif %}>Quality</option>
+                                <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>Comments</option>
+                                <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Recent</option>
+                                <option value="controversial" {% if sort_by == 'controversial' %}selected{% endif %}>Controversial</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2">
+                            <select class="form-select" name="view">
+                                <option value="cards" {% if view_mode == 'cards' %}selected{% endif %}>Cards</option>
+                                <option value="list" {% if view_mode == 'list' %}selected{% endif %}>List</option>
+                                <option value="insights" {% if view_mode == 'insights' %}selected{% endif %}>Insights</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-1">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="filter-tabs text-center">
+                    <button class="filter-tab active" onclick="filterByQuality('all')">
+                        <i class="fas fa-globe me-1"></i>All Articles
+                    </button>
+                    <button class="filter-tab" onclick="filterByQuality('high')">
+                        <i class="fas fa-star me-1"></i>High Quality
+                    </button>
+                    <button class="filter-tab" onclick="filterByQuality('controversial')">
+                        <i class="fas fa-fire me-1"></i>Controversial
+                    </button>
+                    <button class="filter-tab" onclick="filterByQuality('insightful')">
+                        <i class="fas fa-lightbulb me-1"></i>Insightful
+                    </button>
+                    <button class="filter-tab" onclick="filterByQuality('trending')">
+                        <i class="fas fa-trending-up me-1"></i>Trending
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3><i class="fas fa-newspaper me-2"></i>Articles</h3>
+                    <span class="badge bg-primary">{{ articles|length }} results</span>
+                </div>
+
+                <div id="articles-container">
+                    {% for article in articles %}
+                    <div class="card mb-4 article-card" 
+                         data-quality="{{ article.discussion_quality_score or 0 }}"
+                         data-controversy="{{ article.controversy_level or 'low' }}"
+                         data-sentiment="{{ article.sentiment_analysis or 'neutral' }}">
+                        
+                        <div class="card-body">
+                            <!-- Article Header -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title mb-2">
+                                        <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
+                                            {{ article.title }}
+                                            <i class="fas fa-external-link-alt ms-1 text-muted" style="font-size: 0.7em;"></i>
+                                        </a>
+                                    </h5>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <a href="{{ article.url }}" class="domain-pill">{{ article.domain }}</a>
+                                        
+                                        {% if article.discussion_quality_score %}
+                                        {% set quality_class = 'quality-high' if article.discussion_quality_score >= 7 else 'quality-medium' if article.discussion_quality_score >= 4 else 'quality-low' %}
+                                        <span class="quality-badge {{ quality_class }}">
+                                            <i class="fas fa-star me-1"></i>{{ article.discussion_quality_score }}/10
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if article.sentiment_analysis %}
+                                        <span class="sentiment-{{ article.sentiment_analysis }} fw-bold">
+                                            <i class="fas fa-heart me-1"></i>{{ article.sentiment_analysis.title() }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if article.controversy_level and article.controversy_level != 'low' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-fire me-1"></i>{{ article.controversy_level.title() }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <small class="text-muted">
+                                        <i class="fas fa-comments me-1"></i>{{ article.total_comments or 0 }}
+                                        {% if article.analyzed_comments %}
+                                        (<span class="text-primary">{{ article.analyzed_comments }} analyzed</span>)
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- AI Analysis Section -->
+                            {% if article.summary or article.key_insights %}
+                            <div class="ai-analysis">
+                                <h6 class="text-primary mb-2">
+                                    <i class="fas fa-robot me-1"></i>AI Analysis
+                                </h6>
+                                
+                                {% if article.summary %}
+                                <p class="mb-2">{{ article.summary }}</p>
+                                {% endif %}
+                                
+                                {% if article.key_insights %}
+                                <div class="mb-2">
+                                    <strong>Key Insights:</strong>
+                                    <div class="mt-1">
+                                        {% for insight in article.key_insights.split(',')[:3] %}
+                                        <span class="insight-tag">{{ insight.strip() }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if article.main_themes %}
+                                <div>
+                                    <strong>Themes:</strong>
+                                    <span class="text-muted">{{ article.main_themes }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Discussion Preview -->
+                            {% if article.analyzed_comments > 0 %}
+                            <div class="discussion-thread">
+                                <h6 class="text-secondary mb-2">
+                                    <i class="fas fa-users me-1"></i>Discussion Highlights
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                            Insightful Comments: <strong>{{ article.analyzed_comments }}</strong>
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-chart-line me-1 text-success"></i>
+                                            Avg Quality: <strong>{{ "%.1f"|format(article.avg_comment_quality or 0) }}</strong>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="btn-group" role="group">
+                                    <a href="/article/{{ article.hn_id }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>Full Analysis
+                                    </a>
+                                    <a href="https://news.ycombinator.com/item?id={{ article.hn_id }}" 
+                                       target="_blank" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fab fa-hacker-news me-1"></i>HN Discussion
+                                    </a>
+                                </div>
+                                
+                                <small class="text-muted">
+                                    {% if article.generated_at %}
+                                    Analyzed: {{ article.generated_at[:10] }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Load More -->
+                {% if articles|length >= 20 %}
+                <div class="text-center mt-4">
+                    <button class="btn btn-outline-primary btn-lg" onclick="loadMoreArticles()">
+                        <i class="fas fa-plus me-2"></i>Load More Articles
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Real-time Analytics -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Analytics Dashboard</h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Sentiment Distribution -->
+                        <div class="mb-3">
+                            <h6>Sentiment Distribution</h6>
+                            <canvas id="sentimentChart" height="200"></canvas>
+                        </div>
+                        
+                        <!-- Quality Distribution -->
+                        <div class="mb-3">
+                            <h6>Discussion Quality</h6>
+                            <canvas id="qualityChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Domains -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-globe me-2"></i>Top Domains</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for domain_info in stats.top_domains[:8] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <a href="?domain={{ domain_info.domain }}" class="text-decoration-none">
+                                {{ domain_info.domain }}
+                            </a>
+                            <span class="badge bg-light text-dark">{{ domain_info.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- AI Features -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Features</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/conversations" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-comments me-2"></i>Conversation Analysis
+                            </a>
+                            <a href="/curate" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-star me-2"></i>Curated Comments
+                            </a>
+                            <a href="/stats" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-chart-bar me-2"></i>Detailed Analytics
+                            </a>
+                            <button class="btn btn-outline-warning btn-sm" onclick="triggerDailyScrape()">
+                                <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Activity</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-primary"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">{{ stats.total_articles }} articles analyzed</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">{{ stats.analyzed_comments }} comments processed by AI</small>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-info"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">Last update: Today</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize Charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sentiment Chart
+            const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+            new Chart(sentimentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ (stats.sentiment_distribution or {}).keys()|list|tojson }},
+                    datasets: [{
+                        data: {{ (stats.sentiment_distribution or {}).values()|list|tojson }},
+                        backgroundColor: ['#34C759', '#FF3B30', '#8E8E93']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Quality Chart
+            const qualityCtx = document.getElementById('qualityChart').getContext('2d');
+            new Chart(qualityCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ (stats.controversy_distribution or {}).keys()|list|tojson }},
+                    datasets: [{
+                        data: {{ (stats.controversy_distribution or {}).values()|list|tojson }},
+                        backgroundColor: '#007AFF'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+
+        // Filter Functions
+        function filterByQuality(type) {
+            const articles = document.querySelectorAll('.article-card');
+            const tabs = document.querySelectorAll('.filter-tab');
+            
+            // Update active tab
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            articles.forEach(article => {
+                const quality = parseFloat(article.dataset.quality);
+                const controversy = article.dataset.controversy;
+                const sentiment = article.dataset.sentiment;
+                
+                let show = true;
+                
+                switch(type) {
+                    case 'high':
+                        show = quality >= 7;
+                        break;
+                    case 'controversial':
+                        show = controversy === 'high' || controversy === 'medium';
+                        break;
+                    case 'insightful':
+                        show = quality >= 6 && sentiment === 'positive';
+                        break;
+                    case 'trending':
+                        show = quality >= 5;
+                        break;
+                    default:
+                        show = true;
+                }
+                
+                article.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        // Load More Articles
+        function loadMoreArticles() {
+            // Implementation for pagination
+            console.log('Loading more articles...');
+        }
+
+        // Trigger Daily Scrape
+        function triggerDailyScrape() {
+            fetch('/api/trigger-scrape', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Scraping triggered! Refresh the page in a few minutes to see new data.');
+                })
+                .catch(error => {
+                    alert('Error triggering scrape. Please try again.');
+                });
+        }
+
+        // Real-time Updates (placeholder)
+        setInterval(() => {
+            // Placeholder for WebSocket updates
+        }, 30000);
+    </script>
+</body>
+</html>

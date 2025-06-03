@@ -768,9 +768,59 @@ def generate_chat_response(article, message, chat_history):
 
 @app.route('/')
 def index():
-    """Homepage - redirect to classic view."""
-    from flask import redirect
-    return redirect('/classic')
+    """Enhanced AI-powered homepage with comprehensive database utilization."""
+    # Get filter parameters
+    search_query = request.args.get('search', '')
+    domain_filter = request.args.get('domain', 'all')
+    view_mode = request.args.get('view', 'cards')
+    sort_by = request.args.get('sort', 'quality')
+    
+    try:
+        # Get comprehensive articles with AI analysis
+        articles_data = db_manager.get_all_articles_with_analysis()
+        
+        # Apply search filter
+        if search_query:
+            search_results = db_manager.search_comprehensive(search_query, domain_filter if domain_filter != 'all' else None)
+            articles_data = search_results
+        elif domain_filter and domain_filter != 'all':
+            articles_data = [a for a in articles_data if a.get('domain') == domain_filter]
+        
+        # Sort articles based on selection
+        if sort_by == 'quality':
+            articles_data.sort(key=lambda x: x.get('discussion_quality_score', 0), reverse=True)
+        elif sort_by == 'comments':
+            articles_data.sort(key=lambda x: x.get('total_comments', 0), reverse=True)
+        elif sort_by == 'recent':
+            articles_data.sort(key=lambda x: x.get('hn_id', '0'), reverse=True)
+        elif sort_by == 'controversial':
+            articles_data.sort(key=lambda x: (x.get('controversy_level') == 'high', x.get('discussion_quality_score', 0)), reverse=True)
+        
+        # Get comprehensive statistics
+        stats = db_manager.get_stats_with_analysis()
+        
+        # Get all available domains
+        available_domains = list(set(a.get('domain', '') for a in articles_data if a.get('domain')))
+        available_domains.sort()
+        
+        # Limit to first 50 articles for performance
+        articles_data = articles_data[:50]
+        
+    except Exception as e:
+        print(f"Database error, falling back to classic view: {e}")
+        from flask import redirect
+        return redirect('/classic')
+    
+    return render_template('index.html',
+                         articles=articles_data,
+                         domains=available_domains,
+                         search_query=search_query,
+                         domain_filter=domain_filter,
+                         sort_by=sort_by,
+                         view_mode=view_mode,
+                         stats=stats,
+                         curator_available=CURATOR_AVAILABLE,
+                         analyzer_available=ANALYZER_AVAILABLE)
 
 
 @app.route('/classic')
@@ -1280,6 +1330,174 @@ def api_analyze():
     except Exception as e:
         print(f"Analysis API error: {e}")
         return jsonify({'success': False, 'error': 'Analysis failed'})
+
+
+# AI-Powered API Endpoints for Enhanced Homepage
+
+@app.route('/api/trigger-scrape', methods=['POST'])
+def api_trigger_scrape():
+    """Trigger daily scrape via API."""
+    try:
+        # Import and run the daily scraper
+        import subprocess
+        import os
+        
+        scraper_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scrapers', 'daily_enhanced_scraper.py')
+        if os.path.exists(scraper_path):
+            # Run scraper in background
+            subprocess.Popen(['python', scraper_path], cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            return jsonify({'success': True, 'message': 'Daily scrape triggered successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Daily scraper not found'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error triggering scrape: {str(e)}'})
+
+@app.route('/api/articles/trending')
+def api_trending_articles():
+    """Get trending articles based on AI analysis."""
+    try:
+        articles = db_manager.get_all_articles_with_analysis()
+        
+        # Sort by combination of quality score and comment count
+        trending = sorted(articles, 
+                         key=lambda x: (x.get('discussion_quality_score', 0) * 0.7 + 
+                                      min(x.get('total_comments', 0) / 100, 10) * 0.3), 
+                         reverse=True)[:10]
+        
+        return jsonify({
+            'success': True,
+            'articles': trending
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/insights/summary')
+def api_insights_summary():
+    """Get AI-powered insights summary."""
+    try:
+        stats = db_manager.get_stats_with_analysis()
+        articles = db_manager.get_all_articles_with_analysis()
+        
+        # Generate insights
+        insights = {
+            'total_articles': stats.get('total_articles', 0),
+            'quality_trends': {
+                'high_quality': len([a for a in articles if a.get('discussion_quality_score', 0) >= 7]),
+                'medium_quality': len([a for a in articles if 4 <= a.get('discussion_quality_score', 0) < 7]),
+                'low_quality': len([a for a in articles if a.get('discussion_quality_score', 0) < 4])
+            },
+            'sentiment_overview': stats.get('sentiment_distribution', {}),
+            'top_themes': {},  # Could be enhanced with AI analysis
+            'engagement_metrics': {
+                'avg_comments_per_article': stats.get('total_comments', 0) / max(stats.get('total_articles', 1), 1),
+                'ai_analysis_coverage': (stats.get('analyzed_comments', 0) / max(stats.get('total_comments', 1), 1)) * 100
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'insights': insights
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/curated/highlights')
+def api_curated_highlights():
+    """Get curated highlights from AI analysis."""
+    try:
+        curated = db_manager.get_curated_comments(limit=5)
+        
+        highlights = []
+        for comment in curated:
+            highlights.append({
+                'comment_id': comment['id'],
+                'article_title': comment['article_title'],
+                'author': comment['author'],
+                'insight_type': comment['insight_type'],
+                'quality_score': comment['quality_score'],
+                'preview': comment['comment_text'][:200] + '...' if len(comment['comment_text']) > 200 else comment['comment_text'],
+                'why_selected': comment['why_selected']
+            })
+        
+        return jsonify({
+            'success': True,
+            'highlights': highlights
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/analytics/real-time')
+def api_real_time_analytics():
+    """Get real-time analytics for dashboard."""
+    try:
+        stats = db_manager.get_stats_with_analysis()
+        
+        # Calculate additional metrics
+        articles = db_manager.get_all_articles_with_analysis()
+        
+        real_time_data = {
+            'metrics': {
+                'total_articles': stats.get('total_articles', 0),
+                'total_comments': stats.get('total_comments', 0),
+                'analyzed_comments': stats.get('analyzed_comments', 0),
+                'avg_quality': stats.get('avg_discussion_quality', 0)
+            },
+            'charts': {
+                'sentiment_distribution': stats.get('sentiment_distribution', {}),
+                'controversy_distribution': stats.get('controversy_distribution', {}),
+                'quality_histogram': {
+                    '0-3': len([a for a in articles if 0 <= a.get('discussion_quality_score', 0) < 3]),
+                    '3-6': len([a for a in articles if 3 <= a.get('discussion_quality_score', 0) < 6]),
+                    '6-8': len([a for a in articles if 6 <= a.get('discussion_quality_score', 0) < 8]),
+                    '8-10': len([a for a in articles if 8 <= a.get('discussion_quality_score', 0) <= 10])
+                }
+            },
+            'top_domains': stats.get('top_domains', [])[:5]
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': real_time_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/search/smart', methods=['POST'])
+def api_smart_search():
+    """AI-powered smart search with context understanding."""
+    try:
+        data = request.get_json()
+        query = data.get('query', '')
+        
+        if not query:
+            return jsonify({'success': False, 'error': 'Query required'})
+        
+        # Perform comprehensive search
+        results = db_manager.search_comprehensive(query)
+        
+        # Enhance results with AI insights
+        enhanced_results = []
+        for article in results[:10]:  # Limit to 10 results
+            enhanced_results.append({
+                'hn_id': article['hn_id'],
+                'title': article['title'],
+                'url': article['url'],
+                'domain': article['domain'],
+                'summary': article['summary'],
+                'quality_score': article['discussion_quality_score'],
+                'sentiment': article['sentiment_analysis'],
+                'relevance_score': 0.8,  # Could be enhanced with semantic search
+                'key_insights': article['key_insights'],
+                'comment_count': article.get('total_comments', 0)
+            })
+        
+        return jsonify({
+            'success': True,
+            'results': enhanced_results,
+            'total_found': len(results)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 if __name__ == '__main__':

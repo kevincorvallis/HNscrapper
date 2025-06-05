@@ -12,13 +12,26 @@ from typing import Dict, List, Optional, Union
 from pathlib import Path
 
 import tldextract
-from fastapi import FastAPI, HTTPException, Request, Query, Form, Depends
+from fastapi import FastAPI, HTTPException, Request, Query, Form, Depends, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+
+# Authentication imports
+from auth import (
+    firebase_auth, 
+    get_current_user, 
+    get_current_user_optional,
+    login_with_firebase,
+    logout_user,
+    get_user_profile,
+    LoginRequest,
+    LoginResponse,
+    User
+)
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -44,6 +57,9 @@ app.add_middleware(
 
 # Configure templates
 templates = Jinja2Templates(directory="templates")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Database path
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'enhanced_hn_articles.db')
@@ -530,6 +546,45 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "version": "2.0.0",
         "framework": "FastAPI"
+    }
+
+# Authentication Routes
+
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def login(login_request: LoginRequest):
+    """Login with Firebase ID token."""
+    try:
+        return login_with_firebase(login_request)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication failed: {str(e)}"
+        )
+
+@app.post("/api/auth/logout")
+async def logout():
+    """Logout current user."""
+    return logout_user()
+
+@app.get("/api/auth/profile", response_model=User)
+async def get_profile(current_user: User = Depends(get_current_user)):
+    """Get current user profile."""
+    return get_user_profile(current_user)
+
+@app.get("/api/auth/me", response_model=User)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current authenticated user information."""
+    return current_user
+
+# Protected route example
+@app.get("/api/user/bookmarks")
+async def get_user_bookmarks(current_user: User = Depends(get_current_user)):
+    """Get user's bookmarked articles (protected route example)."""
+    # This would fetch user-specific bookmarks from database
+    return {
+        "user_id": current_user.uid,
+        "bookmarks": [],
+        "message": "User bookmarks feature - to be implemented"
     }
 
 # Custom error handlers

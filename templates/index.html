@@ -11,6 +11,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Authentication CSS -->
+    <link href="/static/css/auth.css" rel="stylesheet">
     
     <style>
         :root {
@@ -196,6 +198,40 @@
                 <a class="nav-link" href="/curate">
                     <i class="fas fa-star me-1"></i>Curated
                 </a>
+                
+                <!-- Authentication Elements -->
+                <div id="auth-nav-items" class="d-flex align-items-center">
+                    <!-- Show when not authenticated -->
+                    <div id="login-nav" class="d-none">
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="showAuthModal()">
+                            <i class="fas fa-sign-in-alt me-1"></i>Sign In
+                        </button>
+                    </div>
+                    
+                    <!-- Show when authenticated -->
+                    <div id="user-nav" class="d-none">
+                        <div class="dropdown">
+                            <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center" 
+                                    type="button" data-bs-toggle="dropdown">
+                                <img id="user-avatar" src="" alt="User" class="rounded-circle me-2" 
+                                     style="width: 32px; height: 32px; object-fit: cover;">
+                                <span id="user-name">User</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="showUserProfile()">
+                                    <i class="fas fa-user me-2"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showBookmarks()">
+                                    <i class="fas fa-bookmark me-2"></i>Bookmarks
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="signOut()">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -644,7 +680,7 @@
         function triggerDailyScrape() {
             fetch('/api/trigger-scrape', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
+                .then data => {
                     alert('Scraping triggered! Refresh the page in a few minutes to see new data.');
                 })
                 .catch(error => {
@@ -656,6 +692,71 @@
         setInterval(() => {
             // Placeholder for WebSocket updates
         }, 30000);
+    </script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="/static/js/firebase-config.js"></script>
+    
+    <!-- Authentication Modal -->
+    <div id="auth-modal-container"></div>
+    
+    <!-- Firebase Authentication JavaScript -->
+    <script src="/static/js/firebase-auth.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load authentication modal
+            loadAuthModal();
+            
+            // Initialize Firebase Auth
+            if (window.FirebaseAuth) {
+                window.FirebaseAuth.init();
+            }
+        });
+        
+        // Load authentication modal
+        async function loadAuthModal() {
+            try {
+                const response = await fetch('/static/templates/auth-modal.html');
+                const html = await response.text();
+                document.getElementById('auth-modal-container').innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load auth modal:', error);
+            }
+        }
+        
+        // Show authentication modal
+        function showAuthModal() {
+            const modal = new bootstrap.Modal(document.getElementById('authModal'));
+            modal.show();
+        }
+        
+        // Show user profile
+        function showUserProfile() {
+            // Implementation for user profile
+            console.log('Showing user profile...');
+        }
+        
+        // Show bookmarks
+        function showBookmarks() {
+            // Implementation for bookmarks
+            console.log('Showing bookmarks...');
+        }
+        
+        // Sign out function
+        async function signOut() {
+            if (window.FirebaseAuth) {
+                await window.FirebaseAuth.signOut();
+            }
+        }
     </script>
 </body>
 </html>

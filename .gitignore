@@ -147,3 +147,4 @@ data/*.tmp
 .vscode/
 .idea/
 *.sublime-*
+.vercel

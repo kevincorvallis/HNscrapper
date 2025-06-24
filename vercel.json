@@ -1,15 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 30
     },
-    {
-      "src": "static/**",
-      "use": "@vercel/static"
+    "api/scrape.py": {
+      "maxDuration": 300
+    },
+    "api/analyze.py": {
+      "maxDuration": 60
     }
-  ],
+  },
   "routes": [
     {
       "src": "/static/(.*)",
@@ -22,16 +23,5 @@
   ],
   "env": {
     "FLASK_ENV": "production"
-  },
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 30
-    },
-    "api/scrape.py": {
-      "maxDuration": 300
-    },
-    "api/analyze.py": {
-      "maxDuration": 60
-    }
   }
 }

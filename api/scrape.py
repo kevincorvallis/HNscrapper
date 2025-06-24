@@ -9,8 +9,8 @@ import os
 import sqlite3
 import requests
 from datetime import datetime
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-import tldextract
 
 def handler(request):
     """Vercel function handler for scraping."""
@@ -93,7 +93,8 @@ def scrape_hn_articles(limit=20):
                 url = f"https://news.ycombinator.com/{url}"
                 domain = "news.ycombinator.com"
             else:
-                domain = tldextract.extract(url).registered_domain
+                parsed = urlparse(url)
+                domain = parsed.netloc.replace('www.', '')
             
             article_data = {
                 'hn_id': f"scraped_{int(datetime.now().timestamp())}_{i}",

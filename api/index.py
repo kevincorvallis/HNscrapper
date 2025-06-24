@@ -10,8 +10,8 @@ import sqlite3
 import sys
 from datetime import datetime
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
-import tldextract
 from flask import Flask, jsonify, render_template, request
 
 # Load environment variables
@@ -24,7 +24,7 @@ app = Flask(__name__,
 app.secret_key = os.environ.get('SECRET_KEY', 'vercel-production-key')
 
 # Database path for Vercel (use in-memory or external DB)
-DB_PATH = '/tmp/enhanced_hn_articles.db' if os.environ.get('VERCEL') else 'data/enhanced_hn_articles.db'
+DB_PATH = '/tmp/enhanced_hn_articles.db' if os.environ.get('VERCEL') else 'enhanced_hn_articles.db'
 
 class DatabaseManager:
     """Simplified database manager for Vercel serverless environment."""

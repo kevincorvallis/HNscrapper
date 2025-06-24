@@ -1,0 +1,73 @@
+# Files to ignore for Vercel deployment
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Development files
+test_*.py
+debug_*.py
+*_test.py
+*_debug.py
+dev.py
+demo.py
+
+# Old implementations
+fastapi_*.py
+*_old.py
+*_backup.py
+conversation_analyzer*.py
+conv_analyzer*.py
+enhanced_hn_scraper.py
+scrapper.py
+hn_scraper.py
+
+# Firebase (not needed for Vercel)
+firebase_*.py
+setup_firebase.sh
+FIREBASE_*.md
+
+# Documentation (keep deployment guide)
+*.md
+!VERCEL_DEPLOYMENT.md
+!README.md
+
+# Scripts
+scripts/
+run*.py
+start*.py
+launch*.py
+create_*.py
+validate_*.py
+final_*.py
+optimized_*.py
+simplified_*.py
+
+# Test files
+test*/
+comprehensive_test_results.json
+enhanced_conversation_sample.json
+
+# Config files (use environment variables instead)
+config/
+.env
+.env.example
+firebase_config.md
+
+# Logs and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

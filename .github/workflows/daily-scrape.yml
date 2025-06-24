@@ -1,0 +1,27 @@
+name: Daily HN Scraping
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Trigger Vercel scraping function
+      run: |
+        curl -X POST "${{ secrets.VERCEL_SCRAPE_URL }}/api/scrape" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          -H "Content-Type: application/json" \
+          --fail \
+          --silent \
+          --show-error
+        
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "Scraping failed! Check the logs."
+        # You can add Slack/Discord notifications here

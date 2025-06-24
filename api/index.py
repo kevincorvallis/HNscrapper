@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__, 
-           template_folder='../src/web/templates',
-           static_folder='../src/web/static')
+           template_folder='./templates',
+           static_folder='../static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vercel-production-key')
 
 # Database path for Vercel (use in-memory or external DB)

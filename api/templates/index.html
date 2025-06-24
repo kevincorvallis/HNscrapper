@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HN Enhanced Scraper - Unified Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'hn-orange': '#ff6600',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .comment-tree { margin-left: 1rem; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-hn-orange">HN Enhanced Scraper</h1>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ stats.total_articles }} articles • {{ stats.total_comments }} comments
+                    </span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- View Mode Toggle -->
+                    <div class="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                        <button onclick="setViewMode('articles')" 
+                                class="px-3 py-1 rounded text-sm transition-colors"
+                                id="btn-articles">
+                            📋 Articles
+                        </button>
+                        <button onclick="setViewMode('stats')" 
+                                class="px-3 py-1 rounded text-sm transition-colors"
+                                id="btn-stats">
+                            📊 Statistics
+                        </button>
+                        {% if curator_available %}
+                        <button onclick="setViewMode('curator')" 
+                                class="px-3 py-1 rounded text-sm transition-colors"
+                                id="btn-curator">
+                            🤖 Curator
+                        </button>
+                        {% endif %}
+                    </div>
+                    <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <span class="dark:hidden">🌙</span>
+                        <span class="hidden dark:inline">☀️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Search and Filters (visible in articles mode) -->
+        <div id="search-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <form method="GET" class="space-y-4">
+                <input type="hidden" name="view" value="{{ view_mode or 'articles' }}">
+                
+                <!-- Search Bar -->
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search articles</label>
+                        <input type="text" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search_query }}"
+                               placeholder="Search titles and content..." 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="px-6 py-2 bg-hn-orange text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-hn-orange focus:ring-offset-2 transition-colors">
+                            Search
+                        </button>
+                        <button type="button" onclick="clearFilters()" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                        <label for="domain" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Domain</label>
+                        <select id="domain" name="domain" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                            <option value="all" {% if domain_filter == 'all' %}selected{% endif %}>All domains</option>
+                            {% for domain in domains %}
+                            <option value="{{ domain }}" {% if domain_filter == domain %}selected{% endif %}>{{ domain }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="min_length" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min content length</label>
+                        <select id="min_length" name="min_length" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                            <option value="0" {% if min_length == 0 %}selected{% endif %}>Any length</option>
+                            <option value="200" {% if min_length == 200 %}selected{% endif %}>200+ chars</option>
+                            <option value="500" {% if min_length == 500 %}selected{% endif %}>500+ chars</option>
+                            <option value="1000" {% if min_length == 1000 %}selected{% endif %}>1000+ chars</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort by</label>
+                        <select id="sort" name="sort" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                            <option value="content_length" {% if sort_by == 'content_length' %}selected{% endif %}>Content length</option>
+                            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+                            <option value="domain" {% if sort_by == 'domain' %}selected{% endif %}>Domain</option>
+                            <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>Comment count</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="button" onclick="toggleCommentsView()" 
+                                class="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+                            <span id="comments-toggle-text">Show Comments</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Content Sections -->
+        
+        <!-- Articles View -->
+        <div id="articles-view" class="view-section">
+            {% if articles %}
+                <div class="space-y-4">
+                    {% for article in articles %}
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                        <a href="{{ article.url }}" target="_blank" class="hover:text-hn-orange transition-colors">
+                                            {{ article.title }}
+                                        </a>
+                                    </h3>
+                                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-hn-orange text-white">
+                                            {{ article.domain or 'unknown' }}
+                                        </span>
+                                        <span>{{ (article.content or '')|length }} characters</span>
+                                        <span>{{ count_comments_recursive(article.get('comments', [])) }} comments</span>
+                                        {% if analyzer_available %}
+                                        <button onclick="analyzeContent({{ loop.index0 }})" 
+                                                class="text-blue-500 hover:text-blue-700 font-medium">
+                                            🔍 Analyze
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Content Preview -->
+                            {% if article.content %}
+                            <div class="mb-4">
+                                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                    {{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}
+                                </p>
+                                {% if article.content|length > 300 %}
+                                <button onclick="toggleContent({{ loop.index0 }})" 
+                                        class="text-hn-orange hover:text-orange-700 text-sm font-medium mt-2">
+                                    <span id="toggle-{{ loop.index0 }}">Show full content</span>
+                                </button>
+                                <div id="full-content-{{ loop.index0 }}" class="hidden mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">{{ article.content }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Analysis Results -->
+                            <div id="analysis-{{ loop.index0 }}" class="hidden mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                                <h4 class="font-medium text-blue-900 dark:text-blue-100 mb-2">Content Analysis</h4>
+                                <div id="analysis-content-{{ loop.index0 }}"></div>
+                            </div>
+
+                            <!-- Comments Section -->
+                            <div id="comments-{{ loop.index0 }}" class="comments-section hidden mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                                {% if article.comments %}
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="font-medium text-gray-900 dark:text-white">
+                                        Comments ({{ count_comments_recursive(article.comments) }})
+                                    </h4>
+                                    {% if curator_available %}
+                                    <button onclick="curateComments({{ loop.index0 }})" 
+                                            class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors">
+                                        🤖 Curate
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <div class="max-h-96 overflow-y-auto">
+                                    {{ render_comment_tree(article.comments)|safe }}
+                                </div>
+                                <div id="curated-comments-{{ loop.index0 }}" class="hidden mt-4 p-4 bg-green-50 dark:bg-green-900 rounded-lg">
+                                    <h5 class="font-medium text-green-900 dark:text-green-100 mb-2">Curated Comments</h5>
+                                    <div id="curated-content-{{ loop.index0 }}"></div>
+                                </div>
+                                {% else %}
+                                <p class="text-gray-500 dark:text-gray-400 text-sm italic">No comments available</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No articles found</h3>
+                    <p class="text-gray-500 dark:text-gray-400">Try adjusting your search criteria or run the scraper to collect more data.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Statistics View -->
+        <div id="stats-view" class="view-section hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                            <span class="text-2xl">📰</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Articles</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total_articles }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                            <span class="text-2xl">💬</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Comments</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total_comments }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                            <span class="text-2xl">🌐</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Domains</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total_domains }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                            <span class="text-2xl">📊</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Comments</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.avg_comments_per_article }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Domains -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Top Domains</h3>
+                <div class="space-y-3">
+                    {% for domain_info in stats.top_domains %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ domain_info.domain }}</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3">
+                                <div class="bg-hn-orange h-2 rounded-full" style="width: {{ (domain_info.count / stats.top_domains[0].count * 100)|round(1) }}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-500 dark:text-gray-400 w-8 text-right">{{ domain_info.count }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Curator View -->
+        {% if curator_available %}
+        <div id="curator-view" class="view-section hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">🤖 Comment Curator</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                    Select articles to curate their comments using AI analysis. The curator will identify the most insightful and original comments.
+                </p>
+                <div class="space-y-4">
+                    {% for article in articles %}
+                    {% if article.comments and count_comments_recursive(article.comments) > 0 %}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-medium text-gray-900 dark:text-white">{{ article.title }}</h4>
+                            <button onclick="curateComments({{ loop.index0 }})" 
+                                    class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors">
+                                Curate ({{ count_comments_recursive(article.comments) }} comments)
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ article.domain }}</p>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // View mode management
+        let currentView = '{{ view_mode or "articles" }}';
+        
+        function setViewMode(mode) {
+            currentView = mode;
+            
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected view
+            document.getElementById(mode + '-view').classList.remove('hidden');
+            
+            // Update button states
+            document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+                btn.classList.remove('bg-white', 'dark:bg-gray-600', 'shadow-sm');
+                btn.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            });
+            
+            document.getElementById('btn-' + mode).classList.add('bg-white', 'dark:bg-gray-600', 'shadow-sm');
+            document.getElementById('btn-' + mode).classList.remove('hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            
+            // Show/hide search section
+            if (mode === 'articles') {
+                document.getElementById('search-section').classList.remove('hidden');
+            } else {
+                document.getElementById('search-section').classList.add('hidden');
+            }
+        }
+
+        // Initialize view mode
+        document.addEventListener('DOMContentLoaded', function() {
+            setViewMode(currentView);
+        });
+
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        });
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Comments toggle
+        let showingComments = false;
+        function toggleCommentsView() {
+            showingComments = !showingComments;
+            const commentsSections = document.querySelectorAll('.comments-section');
+            const toggleText = document.getElementById('comments-toggle-text');
+            
+            if (showingComments) {
+                commentsSections.forEach(section => section.classList.remove('hidden'));
+                toggleText.textContent = 'Hide Comments';
+            } else {
+                commentsSections.forEach(section => section.classList.add('hidden'));
+                toggleText.textContent = 'Show Comments';
+            }
+        }
+
+        // Content toggle
+        function toggleContent(index) {
+            const content = document.getElementById('full-content-' + index);
+            const toggle = document.getElementById('toggle-' + index);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                toggle.textContent = 'Hide full content';
+            } else {
+                content.classList.add('hidden');
+                toggle.textContent = 'Show full content';
+            }
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('domain').value = 'all';
+            document.getElementById('min_length').value = '0';
+            document.getElementById('sort').value = 'content_length';
+            document.querySelector('form').submit();
+        }
+
+        // Analyze content
+        function analyzeContent(index) {
+            const analysisDiv = document.getElementById('analysis-' + index);
+            const contentDiv = document.getElementById('analysis-content-' + index);
+            
+            // Show loading
+            analysisDiv.classList.remove('hidden');
+            contentDiv.innerHTML = '<div class="text-center py-4"><span class="text-blue-500">🔍 Analyzing content...</span></div>';
+            
+            // Get article content
+            const articles = {{ articles|tojson }};
+            const article = articles[index];
+            
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: article.content || article.title
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let html = '<div class="space-y-2">';
+                    data.analysis.forEach(conv => {
+                        html += '<div class="p-2 bg-white dark:bg-gray-800 rounded border">';
+                        html += '<p class="text-sm"><strong>Pattern:</strong> ' + conv.pattern + '</p>';
+                        if (conv.participants) {
+                            html += '<p class="text-xs text-gray-600">Participants: ' + conv.participants.join(', ') + '</p>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                    contentDiv.innerHTML = html;
+                } else {
+                    contentDiv.innerHTML = '<p class="text-red-500">Analysis failed: ' + data.error + '</p>';
+                }
+            })
+            .catch(error => {
+                contentDiv.innerHTML = '<p class="text-red-500">Analysis failed: ' + error.message + '</p>';
+            });
+        }
+
+        // Curate comments
+        function curateComments(index) {
+            const curatedDiv = document.getElementById('curated-comments-' + index);
+            const contentDiv = document.getElementById('curated-content-' + index);
+            
+            // Show loading
+            curatedDiv.classList.remove('hidden');
+            contentDiv.innerHTML = '<div class="text-center py-4"><span class="text-green-500">🤖 Curating comments...</span></div>';
+            
+            fetch('/api/curate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    article_id: index
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let html = '<div class="space-y-3">';
+                    data.curated_comments.slice(0, 5).forEach((comment, i) => {
+                        html += '<div class="p-3 bg-white dark:bg-gray-800 rounded border-l-4 border-green-500">';
+                        html += '<div class="flex justify-between items-start mb-2">';
+                        html += '<span class="text-sm font-medium">' + (comment.by || 'Anonymous') + '</span>';
+                        html += '<span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Score: ' + (comment.score || 'N/A') + '</span>';
+                        html += '</div>';
+                        html += '<p class="text-sm text-gray-700 dark:text-gray-300">' + (comment.text || '').substring(0, 200) + '...</p>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                    contentDiv.innerHTML = html;
+                } else {
+                    contentDiv.innerHTML = '<p class="text-red-500">Curation failed: ' + data.error + '</p>';
+                }
+            })
+            .catch(error => {
+                contentDiv.innerHTML = '<p class="text-red-500">Curation failed: ' + error.message + '</p>';
+            });
+        }
+    </script>
+</body>
+</html>

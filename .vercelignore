@@ -4,6 +4,23 @@ data/
 *.sqlite
 *.sqlite3
 
+# Node.js
+node_modules/
+package-lock.json
+
+# Heavy Python files and directories
+src/scrapers/
+src/analyzers/
+src/processors/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.log
+venv/
+env/
+
 # Development files
 test_*.py
 debug_*.py
@@ -55,19 +72,27 @@ config/
 firebase_config.md
 
 # Logs and cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
 *.log
 
 # IDE files
-.vscode/
 .idea/
 *.swp
 *.swo
+# Keep .vscode/ and workspace files for development
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Large template files (keep only essential ones)
+src/web/templates/404.html
+src/web/templates/500.html
+src/web/templates/article.html
+src/web/templates/nyt_*.html
+src/web/templates/search.html
+
+# Static files we don't need
+src/web/static/css/
+src/web/static/js/
+static/css/
+static/js/

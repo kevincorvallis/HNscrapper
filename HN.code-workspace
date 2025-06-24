@@ -5,29 +5,128 @@
         }
     ],
     "settings": {
-        "python.interpreter.path": "./env/bin/python",
+        "python.defaultInterpreterPath": "./venv/bin/python",
         "python.terminal.activateEnvironment": true,
-        "python.defaultInterpreterPath": "./env/bin/python",
-        "terminal.integrated.env.osx": {
-            "PYTHONPATH": "${workspaceFolder}",
-            "FLASK_APP": "app.py",
-            "FLASK_ENV": "development"
-        },
-        "terminal.integrated.encoding": "utf8",
-        "files.associations": {
-            "*.py": "python"
-        },
         "python.formatting.provider": "black",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": true,
-        "editor.formatOnSave": true
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/.pyc": true,
+            "**/node_modules": true,
+            "**/.git": true,
+            "**/.DS_Store": true,
+            "**/*.db": true,
+            "**/data/": true
+        },
+        "search.exclude": {
+            "**/node_modules": true,
+            "**/venv": true,
+            "**/__pycache__": true,
+            "**/data/": true
+        },
+        "terminal.integrated.env.osx": {
+            "FLASK_ENV": "development",
+            "FLASK_APP": "api/index.py"
+        }
     },
     "extensions": {
         "recommendations": [
             "ms-python.python",
             "ms-python.flake8",
             "ms-python.black-formatter",
-            "bradlc.vscode-tailwindcss"
+            "bradlc.vscode-tailwindcss",
+            "formulahendry.auto-rename-tag",
+            "ms-vscode.vscode-json",
+            "redhat.vscode-yaml",
+            "github.vscode-github-actions"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Run Flask App (Local)",
+                "type": "shell",
+                "command": "python",
+                "args": ["api/index.py"],
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Deploy to Vercel",
+                "type": "shell",
+                "command": "vercel",
+                "args": ["--prod"],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Test Scraper",
+                "type": "shell",
+                "command": "python",
+                "args": ["api/scrape.py"],
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "Install Dependencies",
+                "type": "shell",
+                "command": "pip",
+                "args": ["install", "-r", "requirements-vercel.txt"],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            }
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Flask App",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "api/index.py",
+                "console": "integratedTerminal",
+                "env": {
+                    "FLASK_ENV": "development",
+                    "FLASK_DEBUG": "1"
+                }
+            },
+            {
+                "name": "Test Scraper",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "api/scrape.py",
+                "console": "integratedTerminal"
+            }
         ]
     }
 }

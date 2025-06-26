@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Consolidated Flask web application for Hacker News Enhanced Scraper.
+Consolidated Flask web application for Pookie B News Daily.
 All functionalities integrated into a single homepage with comprehensive database integration.
+Features weekly podcast generation and playback.
 """
 
 import json

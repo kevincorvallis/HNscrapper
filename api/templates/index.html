@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}HN Enhanced Scraper - Enhanced Hacker News{% endblock %}
+{% block title %}Pookie B News Daily - Enhanced Tech News{% endblock %}
 
 {% block nav_stats %}
     {{ stats.total_articles }} articles • {{ stats.total_comments }} comments
@@ -14,11 +14,31 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 <div class="lg:col-span-8">
                     <h1 class="text-4xl md:text-5xl font-bold headline mb-4">
-                        Enhanced Hacker News
+                        🍯 Pookie B News Daily
                     </h1>
                     <p class="text-xl text-orange-100 leading-relaxed mb-6 max-w-2xl">
-                        Discover, analyze, and listen to the best tech stories with AI-powered insights and curated discussions.
+                        Your weekly dose of tech news with AI-powered insights, curated discussions, and audio podcasts.
                     </p>
+                    
+                    <!-- Weekly Podcast Player -->
+                    <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4 mb-6">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                                    🎙️
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">Weekly Podcast</h3>
+                                <p class="text-orange-100 text-sm">Latest episode generated {{ current_date }}</p>
+                                <audio controls class="w-full mt-2" preload="metadata">
+                                    <source src="/audio_files/hn_daily_{{ current_date_file }}.mp3" type="audio/mpeg">
+                                    <source src="/audio_files/pookie_b_weekly_latest.mp3" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
+                        </div>
+                    </div>
                     <div class="flex flex-wrap gap-4">
                         <!-- View Mode Toggle -->
                         <div class="flex bg-white/10 backdrop-blur-sm rounded-lg p-1">

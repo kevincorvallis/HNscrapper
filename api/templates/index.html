@@ -1,116 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HN Enhanced Scraper - Unified Dashboard                                        <!-- Time Information -->
-                                        {% if article.time_posted and article.time_posted > 0 %}
-                                        <span class="inline-flex items-center text-xs text-gray-600 dark:text-gray-400 font-medium">
-                                            ⏱️ Posted {{ article.time_posted|time_ago }}
-                                        </span>
-                                        {% endif %}
-                                        
-                                        {% if article.scraped_at %}
-                                        <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
-                                            📥 Scraped {{ article.scraped_at|scraped_time }}
-                                        </span>
-                                        {% elif article.generated_at %}
-                                        <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
-                                            📥 Added {{ article.generated_at|scraped_time }}
-                                        </span>
-                                        {% endif %}   
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'hn-orange': '#ff6600',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .comment-tree { margin-left: 1rem; }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
-</head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-    <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-hn-orange">HN Enhanced Scraper</h1>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ stats.total_articles }} articles • {{ stats.total_comments }} comments
-                    </span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <!-- View Mode Toggle -->
-                    <div class="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                        <button onclick="setViewMode('articles')" 
-                                class="px-3 py-1 rounded text-sm transition-colors"
-                                id="btn-articles">
-                            📋 Articles
-                        </button>
-                        <button onclick="setViewMode('stats')" 
-                                class="px-3 py-1 rounded text-sm transition-colors"
-                                id="btn-stats">
-                            📊 Statistics
-                        </button>
-                        {% if curator_available %}
-                        <button onclick="setViewMode('curator')" 
-                                class="px-3 py-1 rounded text-sm transition-colors"
-                                id="btn-curator">
-                            🤖 Curator
-                        </button>
-                        {% endif %}
+{% extends "base.html" %}
+
+{% block title %}HN Enhanced Scraper - Enhanced Hacker News{% endblock %}
+
+{% block nav_stats %}
+    {{ stats.total_articles }} articles • {{ stats.total_comments }} comments
+{% endblock %}
+
+{% block content %}
+<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Enhanced Header Section -->
+    <section class="mb-8 fade-in">
+        <div class="bg-gradient-to-r from-hn-orange to-hn-orange-light rounded-2xl p-8 text-white">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div class="lg:col-span-8">
+                    <h1 class="text-4xl md:text-5xl font-bold headline mb-4">
+                        Enhanced Hacker News
+                    </h1>
+                    <p class="text-xl text-orange-100 leading-relaxed mb-6 max-w-2xl">
+                        Discover, analyze, and listen to the best tech stories with AI-powered insights and curated discussions.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <!-- View Mode Toggle -->
+                        <div class="flex bg-white/10 backdrop-blur-sm rounded-lg p-1">
+                            <button onclick="setViewMode('articles')" 
+                                    class="px-4 py-2 rounded text-sm font-medium transition-colors"
+                                    id="btn-articles">
+                                📋 Articles
+                            </button>
+                            <button onclick="setViewMode('stats')" 
+                                    class="px-4 py-2 rounded text-sm font-medium transition-colors"
+                                    id="btn-stats">
+                                📊 Statistics
+                            </button>
+                            {% if curator_available %}
+                            <button onclick="setViewMode('curator')" 
+                                    class="px-4 py-2 rounded text-sm font-medium transition-colors"
+                                    id="btn-curator">
+                                🤖 Curator
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-                    <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                        <span class="dark:hidden">🌙</span>
-                        <span class="hidden dark:inline">☀️</span>
-                    </button>
+                </div>
+                <div class="lg:col-span-4">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4">Quick Stats</h3>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.total_articles or 0 }}</div>
+                                <div class="text-sm text-orange-200">Articles</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.total_comments or 0 }}</div>
+                                <div class="text-sm text-orange-200">Comments</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.avg_score|round|int or 0 }}</div>
+                                <div class="text-sm text-orange-200">Avg Score</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.unique_domains or 0 }}</div>
+                                <div class="text-sm text-orange-200">Domains</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </header>
+    </section>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Search and Filters (visible in articles mode) -->
-        <div id="search-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <form method="GET" class="space-y-4">
+    <!-- Enhanced Search and Filters Section -->
+    <section class="mb-8 slide-in" id="search-filters">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white headline">
+                    Latest Articles
+                </h2>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="setActiveFilter('all')" class="filter-btn active" data-filter="all">
+                        All Articles
+                    </button>
+                    <button onclick="setActiveFilter('trending')" class="filter-btn" data-filter="trending">
+                        🔥 Trending
+                    </button>
+                    <button onclick="setActiveFilter('recent')" class="filter-btn" data-filter="recent">
+                        🆕 Recent
+                    </button>
+                    <button onclick="setActiveFilter('discussed')" class="filter-btn" data-filter="discussed">
+                        💬 Most Discussed
+                    </button>
+                </div>
+            </div>
+
+            <form method="GET" class="space-y-4" id="filter-form">
                 <input type="hidden" name="view" value="{{ view_mode or 'articles' }}">
                 
-                <!-- Search Bar -->
+                <!-- Enhanced Search Bar -->
                 <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1">
                         <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search articles</label>
-                        <input type="text" 
-                               id="search" 
-                               name="search" 
-                               value="{{ search_query }}"
-                               placeholder="Search titles and content..." 
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                        <div class="relative">
+                            <input type="text" 
+                                   id="search" 
+                                   name="search" 
+                                   value="{{ search_query or '' }}"
+                                   placeholder="Search titles, content, or domains..." 
+                                   class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white responsive-text">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex gap-2">
-                        <button type="submit" class="px-6 py-2 bg-hn-orange text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-hn-orange focus:ring-offset-2 transition-colors">
+                        <button type="submit" class="px-6 py-3 bg-hn-orange text-white rounded-lg font-medium hover:bg-hn-orange-dark focus:outline-none focus:ring-2 focus:ring-hn-orange focus:ring-offset-2 transition-colors focus-ring">
                             Search
                         </button>
-                        <button type="button" onclick="clearFilters()" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                        <button type="button" onclick="clearFilters()" class="px-4 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors focus-ring">
                             Clear
                         </button>
                     </div>
                 </div>
 
-                <!-- Filters Row -->
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <!-- Enhanced Filters Row -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label for="domain" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Domain</label>
-                        <select id="domain" name="domain" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                        <select id="domain" name="domain" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
                             <option value="all" {% if domain_filter == 'all' %}selected{% endif %}>All domains</option>
                             {% for domain in domains %}
                             <option value="{{ domain }}" {% if domain_filter == domain %}selected{% endif %}>{{ domain }}</option>
@@ -119,7 +136,7 @@
                     </div>
                     <div>
                         <label for="min_length" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min content length</label>
-                        <select id="min_length" name="min_length" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                        <select id="min_length" name="min_length" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
                             <option value="0" {% if min_length == 0 %}selected{% endif %}>Any length</option>
                             <option value="200" {% if min_length == 200 %}selected{% endif %}>200+ chars</option>
                             <option value="500" {% if min_length == 500 %}selected{% endif %}>500+ chars</option>
@@ -128,7 +145,7 @@
                     </div>
                     <div>
                         <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort by</label>
-                        <select id="sort" name="sort" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
+                        <select id="sort" name="sort" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
                             <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Highest Score</option>
                             <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Most Recent</option>
                             <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>Most Comments</option>
@@ -137,13 +154,14 @@
                     </div>
                     <div class="flex items-end">
                         <button type="button" onclick="toggleCommentsView()" 
-                                class="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+                                class="w-full px-4 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors focus-ring">
                             <span id="comments-toggle-text">Show Comments</span>
                         </button>
                     </div>
                 </div>
             </form>
         </div>
+    </section>
 
         <!-- Content Sections -->
         
@@ -448,179 +466,211 @@
         {% endif %}
     </div>
 
-    <script>
-        // View mode management
-        let currentView = '{{ view_mode or "articles" }}';
-        
-        function setViewMode(mode) {
-            currentView = mode;
-            
-            // Hide all views
-            document.querySelectorAll('.view-section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            
-            // Show selected view
-            document.getElementById(mode + '-view').classList.remove('hidden');
-            
-            // Update button states
-            document.querySelectorAll('[id^="btn-"]').forEach(btn => {
-                btn.classList.remove('bg-white', 'dark:bg-gray-600', 'shadow-sm');
-                btn.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            });
-            
-            document.getElementById('btn-' + mode).classList.add('bg-white', 'dark:bg-gray-600', 'shadow-sm');
-            document.getElementById('btn-' + mode).classList.remove('hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            
-            // Show/hide search section
-            if (mode === 'articles') {
-                document.getElementById('search-section').classList.remove('hidden');
-            } else {
-                document.getElementById('search-section').classList.add('hidden');
-            }
+    {% block scripts %}
+<script>
+    // Enhanced UI functionality
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMoreArticles = true;
+
+    // Filter management
+    function setActiveFilter(filter) {
+        // Update filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
         }
+        
+        // Update sort dropdown based on filter
+        const sortSelect = document.getElementById('sort');
+        switch(filter) {
+            case 'trending':
+                sortSelect.value = 'score';
+                break;
+            case 'recent':
+                sortSelect.value = 'recent';
+                break;
+            case 'discussed':
+                sortSelect.value = 'comments';
+                break;
+        }
+        
+        // Submit form
+        document.getElementById('filter-form').submit();
+    }
+
+    // Clear all filters
+    function clearFilters() {
+        document.getElementById('search').value = '';
+        document.getElementById('domain').value = 'all';
+        document.getElementById('sort').value = 'score';
+        setActiveFilter('all');
+    }
+
+    // View mode management
+    function setViewMode(mode) {
+        // Update button states
+        document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+            btn.classList.remove('bg-white/20', 'text-white');
+            btn.classList.add('text-orange-200');
+        });
+        
+        const activeBtn = document.getElementById('btn-' + mode);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-white/20', 'text-white');
+            activeBtn.classList.remove('text-orange-200');
+        }
+    }
+
+    // Load more articles functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', loadMoreArticles);
+        }
+
+        // Add CSS for filter buttons
+        const style = document.createElement('style');
+        style.textContent = `
+            .filter-btn {
+                padding: 0.5rem 1rem;
+                border-radius: 0.5rem;
+                font-weight: 500;
+                transition: all 0.2s;
+                border: 1px solid transparent;
+                background: white;
+                color: #6b7280;
+            }
+            .dark .filter-btn {
+                background: #374151;
+                color: #d1d5db;
+            }
+            .filter-btn:hover {
+                background: #f3f4f6;
+                color: #ff6600;
+                transform: translateY(-1px);
+            }
+            .dark .filter-btn:hover {
+                background: #4b5563;
+                color: #ff6600;
+            }
+            .filter-btn.active {
+                background: #ff6600;
+                color: white;
+                border-color: #ff6600;
+                box-shadow: 0 4px 14px 0 rgba(255, 102, 0, 0.25);
+            }
+            .hover-lift {
+                transition: transform 0.2s ease-in-out;
+            }
+            .hover-lift:hover {
+                transform: translateY(-2px);
+            }
+            .hover-glow:hover {
+                box-shadow: 0 10px 25px rgba(255, 102, 0, 0.15);
+            }
+        `;
+        document.head.appendChild(style);
 
         // Initialize view mode
-        document.addEventListener('DOMContentLoaded', function() {
-            setViewMode(currentView);
-        });
+        setViewMode('articles');
+    });
 
-        // Dark mode toggle
-        document.getElementById('darkModeToggle').addEventListener('click', function() {
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
-        });
-
-        // Load dark mode preference
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.documentElement.classList.add('dark');
-        }
-
-        // Comments toggle
-        let showingComments = false;
-        function toggleCommentsView() {
-            showingComments = !showingComments;
-            const commentsSections = document.querySelectorAll('.comments-section');
-            const toggleText = document.getElementById('comments-toggle-text');
+    function loadMoreArticles() {
+        if (isLoading || !hasMoreArticles) return;
+        
+        isLoading = true;
+        const loadBtn = document.getElementById('loadMoreBtn');
+        const spinner = document.getElementById('loadSpinner');
+        const text = document.getElementById('loadMoreText');
+        
+        // Show loading state
+        loadBtn.disabled = true;
+        spinner.classList.remove('hidden');
+        text.textContent = 'Loading...';
+        
+        // Simulate API call (replace with actual API endpoint)
+        setTimeout(() => {
+            currentPage++;
             
-            if (showingComments) {
-                commentsSections.forEach(section => section.classList.remove('hidden'));
-                toggleText.textContent = 'Hide Comments';
+            if (currentPage > 3) {
+                document.getElementById('load-more-section').innerHTML = 
+                    '<p class="text-gray-500 dark:text-gray-400 text-center">You\'ve reached the end of the articles.</p>';
+                hasMoreArticles = false;
             } else {
-                commentsSections.forEach(section => section.classList.add('hidden'));
-                toggleText.textContent = 'Show Comments';
+                // Reset button state
+                loadBtn.disabled = false;
+                spinner.classList.add('hidden');
+                text.textContent = 'Load More Articles';
             }
-        }
+            
+            isLoading = false;
+        }, 1500);
+    }
 
-        // Content toggle
-        function toggleContent(index) {
-            const content = document.getElementById('full-content-' + index);
-            const toggle = document.getElementById('toggle-' + index);
-            
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                toggle.textContent = 'Hide full content';
-            } else {
-                content.classList.add('hidden');
-                toggle.textContent = 'Show full content';
-            }
+    // Comments toggle functionality
+    function toggleCommentsView() {
+        const toggleText = document.getElementById('comments-toggle-text');
+        const currentText = toggleText.textContent;
+        
+        if (currentText === 'Show Comments') {
+            toggleText.textContent = 'Hide Comments';
+            showAllComments();
+        } else {
+            toggleText.textContent = 'Show Comments';
+            hideAllComments();
         }
+    }
 
-        // Clear filters
-        function clearFilters() {
-            document.getElementById('search').value = '';
-            document.getElementById('domain').value = 'all';
-            document.getElementById('min_length').value = '0';
-            document.getElementById('sort').value = 'content_length';
-            document.querySelector('form').submit();
-        }
+    function showAllComments() {
+        // Implementation for showing comments
+        console.log('Showing all comments');
+    }
 
-        // Analyze content
-        function analyzeContent(index) {
-            const analysisDiv = document.getElementById('analysis-' + index);
-            const contentDiv = document.getElementById('analysis-content-' + index);
-            
-            // Show loading
-            analysisDiv.classList.remove('hidden');
-            contentDiv.innerHTML = '<div class="text-center py-4"><span class="text-blue-500">🔍 Analyzing content...</span></div>';
-            
-            // Get article content
-            const articles = {{ articles|tojson }};
-            const article = articles[index];
-            
-            fetch('/api/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: article.content || article.title
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    let html = '<div class="space-y-2">';
-                    data.analysis.forEach(conv => {
-                        html += '<div class="p-2 bg-white dark:bg-gray-800 rounded border">';
-                        html += '<p class="text-sm"><strong>Pattern:</strong> ' + conv.pattern + '</p>';
-                        if (conv.participants) {
-                            html += '<p class="text-xs text-gray-600">Participants: ' + conv.participants.join(', ') + '</p>';
-                        }
-                        html += '</div>';
-                    });
-                    html += '</div>';
-                    contentDiv.innerHTML = html;
-                } else {
-                    contentDiv.innerHTML = '<p class="text-red-500">Analysis failed: ' + data.error + '</p>';
+    function hideAllComments() {
+        // Implementation for hiding comments
+        console.log('Hiding all comments');
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-hn-orange';
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
                 }
-            })
-            .catch(error => {
-                contentDiv.innerHTML = '<p class="text-red-500">Analysis failed: ' + error.message + '</p>';
+            }, 300);
+        }, 3000);
+    }
+
+    // Search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('search');
+        const navSearchInput = document.getElementById('nav-search');
+        
+        // Sync search inputs
+        if (searchInput && navSearchInput) {
+            searchInput.addEventListener('input', function() {
+                navSearchInput.value = this.value;
+            });
+            
+            navSearchInput.addEventListener('input', function() {
+                searchInput.value = this.value;
             });
         }
-
-        // Curate comments
-        function curateComments(index) {
-            const curatedDiv = document.getElementById('curated-comments-' + index);
-            const contentDiv = document.getElementById('curated-content-' + index);
-            
-            // Show loading
-            curatedDiv.classList.remove('hidden');
-            contentDiv.innerHTML = '<div class="text-center py-4"><span class="text-green-500">🤖 Curating comments...</span></div>';
-            
-            fetch('/api/curate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    article_id: index
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    let html = '<div class="space-y-3">';
-                    data.curated_comments.slice(0, 5).forEach((comment, i) => {
-                        html += '<div class="p-3 bg-white dark:bg-gray-800 rounded border-l-4 border-green-500">';
-                        html += '<div class="flex justify-between items-start mb-2">';
-                        html += '<span class="text-sm font-medium">' + (comment.by || 'Anonymous') + '</span>';
-                        html += '<span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Score: ' + (comment.score || 'N/A') + '</span>';
-                        html += '</div>';
-                        html += '<p class="text-sm text-gray-700 dark:text-gray-300">' + (comment.text || '').substring(0, 200) + '...</p>';
-                        html += '</div>';
-                    });
-                    html += '</div>';
-                    contentDiv.innerHTML = html;
-                } else {
-                    contentDiv.innerHTML = '<p class="text-red-500">Curation failed: ' + data.error + '</p>';
-                }
-            })
-            .catch(error => {
-                contentDiv.innerHTML = '<p class="text-red-500">Curation failed: ' + error.message + '</p>';
-            });
-        }
-    </script>
+    });
+</script>
+{% endblock %}
 </body>
 </html>

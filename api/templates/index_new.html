@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hacker News Daily - {{ current_date }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'hn-orange': '#ff6600',
+                        'npr-blue': '#1e3a8a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .podcast-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .category-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .category-technology { background-color: #3B82F6; color: white; }
+        .category-business { background-color: #10B981; color: white; }
+        .category-science { background-color: #8B5CF6; color: white; }
+        .category-politics { background-color: #EF4444; color: white; }
+        .category-entertainment { background-color: #F59E0B; color: white; }
+        .category-world-news { background-color: #6B7280; color: white; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-3xl font-bold text-hn-orange">Hacker News Daily</h1>
+                    <div class="hidden sm:flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                        <span>📰 {{ stats.total_articles }} articles</span>
+                        <span>💬 {{ stats.total_comments }} comments</span>
+                        <span>🗃️ {{ stats.unique_domains }} domains</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <span class="dark:hidden">🌙</span>
+                        <span class="hidden dark:inline">☀️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Date and Generated At -->
+        <div class="text-center mb-8">
+            <h2 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">{{ current_date }}</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Generated at {{ current_time }}</p>
+        </div>
+
+        <!-- Daily Briefing -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+            <p class="text-lg leading-relaxed text-gray-700 dark:text-gray-300">{{ briefing_text }}</p>
+        </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Daily Briefing Header -->
+        <div class="bg-gradient-to-r from-npr-blue to-blue-700 text-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold mb-2">📅 Thursday, June 26, 2025</h2>
+                    <p class="text-blue-100 text-sm">Generated at {{ moment().format('h:mm A') }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500 text-white">
+                        🔴 LIVE
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Briefing -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4 flex items-center">
+                <span class="mr-2">📻</span>
+                Today's Tech Briefing with Beryl
+            </h3>
+            
+            <!-- Daily Podcast Player -->
+            {% if today_episode %}
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="font-medium text-gray-900 dark:text-white">{{ today_episode.title }}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                            Duration: ~{{ (today_episode.duration_seconds // 60) }}:{{ "%02d"|format(today_episode.duration_seconds % 60) }} | 
+                            {{ today_episode.articles_featured|length }} stories
+                        </p>
+                    </div>
+                    <span class="podcast-pulse inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                        🎵 New
+                    </span>
+                </div>
+                
+                {% if today_episode.audio_path %}
+                <audio controls class="w-full mb-4">
+                    <source src="/static/audio/{{ today_episode.audio_path.split('/')[-1] }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                {% endif %}
+                
+                <a href="/podcast" class="inline-flex items-center text-sm text-npr-blue hover:text-blue-700 font-medium">
+                    View all episodes →
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Daily Summary -->
+            <div class="prose dark:prose-invert max-w-none">
+                <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    Good morning! It's Thursday, June 26th, and we're covering the most significant developments 
+                    in technology today. From breakthrough innovations in AI and software development to major 
+                    industry shifts and startup news, today's briefing brings you {{ articles[:10]|length }} carefully 
+                    curated stories that are shaping our digital future. These stories represent the conversations 
+                    happening across the tech community, featuring insights from developers, entrepreneurs, and 
+                    industry leaders worldwide.
+                </p>
+            </div>
+        </div>
+
+        <!-- Today's Headlines -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-xl font-semibold mb-6 flex items-center">
+                <span class="mr-2">📋</span>
+                Today's Headlines
+            </h3>
+
+            <div class="space-y-4">
+                {% for article in articles[:10] %}
+                <div class="border-l-4 border-hn-orange pl-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-r-lg">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="flex-shrink-0 w-6 h-6 bg-hn-orange text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                    {{ loop.index }}
+                                </span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    {% if article.domain in ['github.com', 'stackoverflow.com'] %}bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100
+                                    {% elif article.domain in ['techcrunch.com', 'venturebeat.com'] %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                    {% elif article.domain in ['arxiv.org', 'research.'] %}bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100
+                                    {% elif 'news' in article.domain or 'bbc' in article.domain %}bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100
+                                    {% elif 'blog' in article.domain %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100
+                                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100{% endif %}">
+                                    {% if article.domain in ['github.com', 'stackoverflow.com'] %}Technology
+                                    {% elif article.domain in ['techcrunch.com', 'venturebeat.com'] %}Business
+                                    {% elif article.domain in ['arxiv.org'] or 'research' in article.domain %}Research
+                                    {% elif 'news' in article.domain or 'bbc' in article.domain %}World News
+                                    {% elif 'blog' in article.domain %}Opinion
+                                    {% else %}Technology{% endif %}
+                                </span>
+                            </div>
+                            
+                            <a href="/article/{{ article.hn_id }}" class="block group">
+                                <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-hn-orange transition-colors mb-1">
+                                    {{ article.title }}
+                                </h4>
+                                <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                                    <span>📈 {{ article.score }} points</span>
+                                    <span>💬 {{ article.num_comments or article.comment_count or 0 }} comments</span>
+                                    <span>🌐 {{ article.domain }}</span>
+                                    {% if article.author %}
+                                    <span>👤 {{ article.author }}</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <div class="flex-shrink-0 ml-4">
+                            {% if article.podcast_audio_path %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                🎙️ Podcast
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Load More Button -->
+            {% if articles|length > 10 %}
+            <div class="mt-6 text-center">
+                <button onclick="loadMoreArticles()" class="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    Load More Articles ({{ articles|length - 10 }} remaining)
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center">
+                            <span class="text-blue-600 dark:text-blue-300">📊</span>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Average Score</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ stats.avg_score }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                            <span class="text-green-600 dark:text-green-300">🌐</span>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Top Domains</p>
+                        <p class="text-sm text-gray-900 dark:text-white">{{ stats.domains[:3]|join(', ') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-100 dark:bg-purple-800 rounded-lg flex items-center justify-center">
+                            <span class="text-purple-600 dark:text-purple-300">⚡</span>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</p>
+                        <p class="text-sm text-gray-900 dark:text-white">{{ moment().format('h:mm A') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <p class="text-gray-500 dark:text-gray-400 text-sm">
+                    © 2025 Hacker News Daily. Powered by Beryl AI.
+                </p>
+                <div class="flex space-x-4">
+                    <a href="/podcast" class="text-gray-500 dark:text-gray-400 hover:text-hn-orange text-sm">Podcast</a>
+                    <a href="/api/stats" class="text-gray-500 dark:text-gray-400 hover:text-hn-orange text-sm">API</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+
+        darkModeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('darkMode', html.classList.contains('dark'));
+        });
+
+        // Load saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            html.classList.add('dark');
+        }
+
+        // Load more articles function
+        function loadMoreArticles() {
+            // This would typically load more articles via AJAX
+            console.log('Loading more articles...');
+        }
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            document.querySelectorAll('[data-timestamp]').forEach(el => {
+                el.textContent = `Generated at ${timeString}`;
+            });
+        }
+
+        // Update timestamp on page load and every minute
+        updateTimestamp();
+        setInterval(updateTimestamp, 60000);
+    </script>
+</body>
+</html>

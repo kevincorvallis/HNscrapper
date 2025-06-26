@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.py": {
-      "maxDuration": 30,
+      "maxDuration": 60,
       "memory": 1024
     },
     "api/scrape.py": {
@@ -15,6 +15,10 @@
     }
   },
   "routes": [
+    {
+      "src": "/audio/(.*)",
+      "dest": "/api/index.py"
+    },
     {
       "src": "/(.*)",
       "dest": "/api/index.py"

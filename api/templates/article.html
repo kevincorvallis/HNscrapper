@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} - HN Enhanced</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'hn-orange': '#ff6600',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .comment-tree { 
+            margin-left: 1rem; 
+            border-left: 2px solid #e5e7eb;
+            padding-left: 1rem;
+        }
+        .comment-level-0 { margin-left: 0; border-left: none; padding-left: 0; }
+        .comment-level-1 { margin-left: 1rem; }
+        .comment-level-2 { margin-left: 2rem; }
+        .comment-level-3 { margin-left: 3rem; }
+        .comment-level-4 { margin-left: 4rem; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-hn-orange hover:text-orange-700 font-medium">← Back to Home</a>
+                    <h1 class="text-xl font-bold text-hn-orange">HN Enhanced</h1>
+                </div>
+                <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <span class="dark:hidden">🌙</span>
+                    <span class="hidden dark:inline">☀️</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Article Header -->
+        <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+            <div class="p-6">
+                <!-- Article Title -->
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                    {{ article.title }}
+                </h1>
+                
+                <!-- Article Meta Info -->
+                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    <!-- Score -->
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                        🔺 {{ article.score }} points
+                    </span>
+                    
+                    <!-- Domain -->
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-hn-orange text-white">
+                        {{ article.domain }}
+                    </span>
+                    
+                    <!-- Author -->
+                    <span class="inline-flex items-center">
+                        👤 by {{ article.author }}
+                    </span>
+                    
+                    <!-- Comments -->
+                    <span class="inline-flex items-center">
+                        💬 {{ article.num_comments }} comments
+                    </span>
+                    
+                    <!-- Time -->
+                    <span class="inline-flex items-center text-xs">
+                        ⏰ {{ article.scraped_at[:16].replace('T', ' ') }}
+                    </span>
+                </div>
+                
+                <!-- Article URL -->
+                {% if article.url %}
+                <div class="mb-4">
+                    <a href="{{ article.url }}" target="_blank" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+                        🔗 Read Original Article
+                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                </div>
+                {% endif %}
+                
+                <!-- Article Text (if it's a text post) -->
+                {% if article.story_text %}
+                <div class="prose dark:prose-invert max-w-none">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-gray-700 dark:text-gray-300">
+                        {{ article.story_text | safe }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </article>
+
+        <!-- Comments Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                    💬 Discussion ({{ article.comments|length }} comments)
+                </h2>
+                
+                {% if article.comments %}
+                    <!-- Sort Comments -->
+                    <div class="mb-6">
+                        <div class="flex items-center space-x-2 text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">Sort by:</span>
+                            <button onclick="sortComments('time')" class="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Time
+                            </button>
+                            <button onclick="sortComments('level')" class="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Thread
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Comments List -->
+                    <div id="comments-container" class="space-y-4">
+                        {% for comment in article.comments %}
+                        <div class="comment comment-level-{{ comment.level }} border-l-2 border-gray-200 dark:border-gray-600 pl-4" 
+                             data-level="{{ comment.level }}" 
+                             data-time="{{ comment.time_posted }}">
+                            
+                            <!-- Comment Header -->
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="font-medium text-hn-orange">{{ comment.author }}</span>
+                                    <span>•</span>
+                                    <span>{{ (comment.time_posted | int) | timestamp_to_date if comment.time_posted else 'unknown time' }}</span>
+                                    {% if comment.level > 0 %}
+                                    <span>•</span>
+                                    <span class="text-xs">Reply level {{ comment.level }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Comment Content -->
+                            <div class="prose dark:prose-invert max-w-none text-sm">
+                                <div class="text-gray-700 dark:text-gray-300">
+                                    {{ comment.content | safe }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <div class="text-4xl mb-2">💭</div>
+                        <p>No comments available for this article yet.</p>
+                        <p class="text-sm mt-2">Comments may still be loading from Hacker News.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+
+        // Check for saved theme preference or default to light
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        html.classList.toggle('dark', currentTheme === 'dark');
+
+        darkModeToggle.addEventListener('click', () => {
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // Comment sorting
+        function sortComments(sortBy) {
+            const container = document.getElementById('comments-container');
+            const comments = Array.from(container.children);
+            
+            comments.sort((a, b) => {
+                if (sortBy === 'time') {
+                    return parseInt(b.dataset.time) - parseInt(a.dataset.time);
+                } else if (sortBy === 'level') {
+                    const levelA = parseInt(a.dataset.level);
+                    const levelB = parseInt(b.dataset.level);
+                    if (levelA !== levelB) return levelA - levelB;
+                    return parseInt(b.dataset.time) - parseInt(a.dataset.time);
+                }
+            });
+            
+            // Re-append sorted comments
+            comments.forEach(comment => container.appendChild(comment));
+        }
+
+        // Add timestamp filter for Jinja2
+        function timestampToDate(timestamp) {
+            return new Date(timestamp * 1000).toLocaleString();
+        }
+    </script>
+</body>
+</html>

@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HN Enhanced Scraper - Unified Dashboard</title>
-    
+    <title>HN Enhanced Scraper - Unified Dashboard                                        <!-- Time Information -->
+                                        {% if article.time_posted and article.time_posted > 0 %}
+                                        <span class="inline-flex items-center text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                            ⏱️ Posted {{ article.time_posted|time_ago }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if article.scraped_at %}
+                                        <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
+                                            📥 Scraped {{ article.scraped_at|scraped_time }}
+                                        </span>
+                                        {% elif article.generated_at %}
+                                        <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
+                                            📥 Added {{ article.generated_at|scraped_time }}
+                                        </span>
+                                        {% endif %}   
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -115,10 +129,10 @@
                     <div>
                         <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort by</label>
                         <select id="sort" name="sort" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-hn-orange focus:border-hn-orange dark:bg-gray-700 dark:text-white">
-                            <option value="content_length" {% if sort_by == 'content_length' %}selected{% endif %}>Content length</option>
-                            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
-                            <option value="domain" {% if sort_by == 'domain' %}selected{% endif %}>Domain</option>
-                            <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>Comment count</option>
+                            <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Highest Score</option>
+                            <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Most Recent</option>
+                            <option value="comments" {% if sort_by == 'comments' %}selected{% endif %}>Most Comments</option>
+                            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Alphabetical</option>
                         </select>
                     </div>
                     <div class="flex items-end">
@@ -138,33 +152,134 @@
             {% if articles %}
                 <div class="space-y-4">
                     {% for article in articles %}
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200">
                         <div class="p-6">
-                            <div class="flex items-start justify-between mb-4">
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                        <a href="{{ article.url }}" target="_blank" class="hover:text-hn-orange transition-colors">
+                            <!-- Article Header with Score -->
+                            <div class="flex items-start gap-4 mb-4">
+                                <!-- Score Column (HN-style) -->
+                                <div class="flex-shrink-0 text-center">
+                                    {% if article.score is defined and article.score > 0 %}
+                                    <div class="flex flex-col items-center space-y-1">
+                                        <div class="text-hn-orange text-sm font-bold">▲</div>
+                                        <div class="text-lg font-bold text-gray-700 dark:text-gray-300">{{ article.score }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">points</div>
+                                    </div>
+                                    {% else %}
+                                    <div class="flex flex-col items-center space-y-1">
+                                        <div class="text-gray-400 text-sm">▲</div>
+                                        <div class="text-lg font-bold text-gray-400">-</div>
+                                        <div class="text-xs text-gray-400">points</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Article Content -->
+                                <div class="flex-1 min-w-0">
+                                    <!-- Title -->
+                                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                                        <a href="/article/{{ article.hn_id }}" class="hover:text-hn-orange transition-colors">
                                             {{ article.title }}
                                         </a>
-                                    </h3>
-                                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                        {% if article.url %}
+                                        <a href="{{ article.url }}" target="_blank" class="ml-2 text-sm text-gray-500 hover:text-hn-orange transition-colors">
+                                            ({{ article.domain }})
+                                        </a>
+                                        {% endif %}
+                                    </h2>
+                                    
+                                    <!-- Article Meta Information -->
+                                    <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                        <!-- Domain Badge -->
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-hn-orange text-white">
-                                            {{ article.domain or 'unknown' }}
+                                            🌐 {{ article.domain or 'news.ycombinator.com' }}
                                         </span>
-                                        <span>{{ (article.content or '')|length }} characters</span>
-                                        <span>{{ count_comments_recursive(article.get('comments', [])) }} comments</span>
+                                        
+                                        <!-- Author -->
+                                        {% if article.author is defined and article.author != 'unknown' %}
+                                        <span class="inline-flex items-center text-gray-700 dark:text-gray-300">
+                                            <span class="text-xs mr-1">by</span>
+                                            <span class="font-medium">{{ article.author }}</span>
+                                        </span>
+                                        {% endif %}
+                                        
+                                        <!-- Comments Count -->
+                                        {% if article.num_comments is defined and article.num_comments > 0 %}
+                                        <span class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-hn-orange cursor-pointer transition-colors">
+                                            💬 {{ article.num_comments }} comment{{ 's' if article.num_comments != 1 else '' }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        <!-- Time Information -->
+                                        {% if article.scraped_at %}
+                                        <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
+                                            � Scraped {{ article.scraped_at[:16].replace('T', ' at ') }}
+                                        </span>
+                                        {% elif article.generated_at %}
+                                        <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
+                                            � Added {{ article.generated_at[:16].replace('T', ' at ') }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Article Summary/Text Preview -->
+                                    {% if article.story_text and article.story_text|length > 10 %}
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                            {{ article.story_text[:300] }}{% if article.story_text|length > 300 %}...{% endif %}
+                                        </p>
+                                    </div>
+                                    {% elif article.summary and article.summary|length > 10 %}
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                            {{ article.summary }}
+                                        </p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="flex items-center gap-3 pt-2">
+                                        <a href="{{ article.url }}" target="_blank" 
+                                           class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-hn-orange border border-hn-orange rounded-md hover:bg-hn-orange hover:text-white transition-colors">
+                                            🔗 Read Article
+                                        </a>
+                                        
+                                        <a href="https://news.ycombinator.com/item?id={{ article.hn_id }}" target="_blank"
+                                           class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                            🗨️ HN Discussion
+                                        </a>
+                                        
                                         {% if analyzer_available %}
                                         <button onclick="analyzeContent({{ loop.index0 }})" 
-                                                class="text-blue-500 hover:text-blue-700 font-medium">
-                                            🔍 Analyze
+                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors">
+                                            🔍 AI Analysis
                                         </button>
                                         {% endif %}
                                     </div>
                                 </div>
                             </div>
+                                </div>
+                            </div>
                             
-                            <!-- Content Preview -->
-                            {% if article.content %}
+                            <!-- Story Text (for Ask HN, Show HN, etc.) -->
+                            {% if article.story_text %}
+                            <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <p class="text-gray-700 dark:text-gray-300 text-sm">
+                                    {{ article.story_text[:300] }}{% if article.story_text|length > 300 %}...{% endif %}
+                                </p>
+                                {% if article.story_text|length > 300 %}
+                                <button onclick="toggleStoryText({{ loop.index0 }})" 
+                                        class="text-hn-orange hover:text-orange-700 text-sm font-medium mt-2">
+                                    <span id="story-toggle-{{ loop.index0 }}">Show full text</span>
+                                </button>
+                                <div id="full-story-{{ loop.index0 }}" class="hidden mt-4">
+                                    <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">{{ article.story_text }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Content Preview (legacy support) -->
+                            {% if article.content and not article.story_text %}
                             <div class="mb-4">
                                 <p class="text-gray-600 dark:text-gray-300 text-sm">
                                     {{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}
@@ -178,6 +293,15 @@
                                     <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">{{ article.content }}</p>
                                 </div>
                                 {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Summary (legacy support) -->
+                            {% if article.summary and not article.story_text and not article.content %}
+                            <div class="mb-4">
+                                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                    {{ article.summary }}
+                                </p>
                             </div>
                             {% endif %}
 

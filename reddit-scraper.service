@@ -1,0 +1,15 @@
+[Unit]
+Description=Daily Reddit OutOfTheLoop Scraper
+After=network.target
+
+[Service]
+Type=simple
+User=your_username
+WorkingDirectory=/Users/kle/Downloads/HNscrapper
+Environment=PATH=/Users/kle/Downloads/HNscrapper/venv/bin
+ExecStart=/Users/kle/Downloads/HNscrapper/venv/bin/python daily_reddit_scraper.py schedule
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

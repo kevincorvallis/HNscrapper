@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
 """
 Serverless scraping function for Vercel.
-Handles HN scraping in a serverless environment.
+Handles HN scraping using DynamoDB in a serverless environment.
 """
 
 import json
 import os
-import sqlite3
-import requests
+import sys
 from datetime import datetime
-from urllib.parse import urlparse
-from bs4 import BeautifulSoup
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from daily_scraper_dynamodb import HNScrapperDynamoDB
+except ImportError:
+    # Fallback for when import fails in serverless environment
+    HNScrapperDynamoDB = None
+
 
 def handler(request):
     """Vercel function handler for scraping."""
     
     # Verify authorization
     auth_header = request.headers.get('Authorization', '')
-    expected_auth = f"Bearer {os.environ.get('CRON_SECRET', 'default-secret')}"
+    cron_secret = os.environ.get('CRON_SECRET', 'default-secret')
+    expected_auth = f"Bearer {cron_secret}"
     
     if auth_header != expected_auth:
         return {
@@ -28,17 +36,13 @@ def handler(request):
     
     try:
         if request.method == 'POST':
-            # Trigger scraping
-            results = scrape_hn_articles()
+            # Trigger DynamoDB scraping
+            results = scrape_hn_with_dynamodb()
             
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({
-                    'success': True,
-                    'articles_scraped': len(results),
-                    'timestamp': datetime.now().isoformat()
-                })
+                'body': json.dumps(results)
             }
         else:
             return {
@@ -53,116 +57,54 @@ def handler(request):
             'headers': {'Content-Type': 'application/json'},
             'body': json.dumps({
                 'success': False,
-                'error': str(e)
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
             })
         }
 
-def scrape_hn_articles(limit=20):
-    """Scrape HN articles for serverless environment."""
-    
-    # HN best articles URL
-    url = "https://news.ycombinator.com/best"
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (compatible; HN-Scraper-Vercel/1.0)'
-    }
-    
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    
-    soup = BeautifulSoup(response.content, 'html.parser')
-    articles = []
-    
-    # Find article rows
-    for i, item in enumerate(soup.find_all('tr', class_='athing')[:limit]):
-        try:
-            # Get article details
-            title_elem = item.find('span', class_='titleline')
-            if not title_elem:
-                continue
-                
-            link_elem = title_elem.find('a')
-            if not link_elem:
-                continue
-                
-            title = link_elem.text.strip()
-            url = link_elem.get('href', '')
-            
-            # Extract domain
-            if url.startswith('item?'):
-                url = f"https://news.ycombinator.com/{url}"
-                domain = "news.ycombinator.com"
-            else:
-                parsed = urlparse(url)
-                domain = parsed.netloc.replace('www.', '')
-            
-            article_data = {
-                'hn_id': f"scraped_{int(datetime.now().timestamp())}_{i}",
-                'title': title,
-                'url': url,
-                'domain': domain,
-                'scraped_at': datetime.now().isoformat()
-            }
-            
-            articles.append(article_data)
-            
-        except Exception as e:
-            print(f"Error processing article {i}: {e}")
-            continue
-    
-    # Store articles (you might want to use external storage like Supabase)
-    store_articles(articles)
-    
-    return articles
 
-def store_articles(articles):
-    """Store articles in database (temporary SQLite for demo)."""
+def scrape_hn_with_dynamodb():
+    """Use the DynamoDB scraper for serverless environment."""
+    
+    # Check AWS credentials
+    aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+    aws_secret = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    
+    if not all([aws_key_id, aws_secret]):
+        raise Exception(
+            "AWS credentials not found. Please set AWS_ACCESS_KEY_ID and "
+            "AWS_SECRET_ACCESS_KEY"
+        )
+    
+    if HNScrapperDynamoDB is None:
+        raise Exception(
+            "HNScrapperDynamoDB not available. Check import dependencies."
+        )
+    
     try:
-        # In production, you'd use external storage like Supabase or Vercel KV
-        db_path = '/tmp/enhanced_hn_articles.db'
+        # Use the DynamoDB scraper
+        scraper = HNScrapperDynamoDB()
         
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        # Run scrape with conservative limits for serverless environment
+        results = scraper.scrape_daily(
+            max_articles=10,
+            max_comments_per_article=20
+        )
         
-        # Create table if not exists
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS article_analyses (
-                hn_id TEXT PRIMARY KEY,
-                title TEXT,
-                url TEXT,
-                domain TEXT,
-                summary TEXT,
-                generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Insert articles
-        for article in articles:
-            cursor.execute('''
-                INSERT OR REPLACE INTO article_analyses 
-                (hn_id, title, url, domain, summary, generated_at) 
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
-                article['hn_id'],
-                article['title'],
-                article['url'],
-                article['domain'],
-                f"Scraped from HN: {article['title'][:100]}...",
-                article['scraped_at']
-            ))
-        
-        conn.commit()
-        conn.close()
-        
+        return results
+    
     except Exception as e:
-        print(f"Error storing articles: {e}")
+        print(f"Error in DynamoDB scraping: {e}")
+        raise
+
 
 # For local testing
 if __name__ == "__main__":
     class MockRequest:
         def __init__(self):
             self.method = 'POST'
-            self.headers = {'Authorization': f"Bearer {os.environ.get('CRON_SECRET', 'test')}"}
+            cron_secret = os.environ.get('CRON_SECRET', 'test')
+            self.headers = {'Authorization': f"Bearer {cron_secret}"}
     
     result = handler(MockRequest())
     print(json.dumps(result, indent=2))

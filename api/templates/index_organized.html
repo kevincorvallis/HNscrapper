@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Pookie B News Daily - Enhanced Tech News{% endblock %}
+
+{% block nav_stats %}
+    {{ stats.total_articles }} articles • {{ stats.total_comments }} comments
+{% endblock %}
+
+{% block content %}
+<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Enhanced Header Section -->
+    <section class="mb-8 fade-in">
+        <div class="bg-gradient-to-r from-hn-orange to-hn-orange-light rounded-2xl p-8 text-white">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div class="lg:col-span-8">
+                    <h1 class="text-4xl md:text-5xl font-bold headline mb-4">
+                        🍯 Pookie B News Daily
+                    </h1>
+                    <p class="text-xl text-orange-100 leading-relaxed mb-6 max-w-2xl">
+                        Your daily dose of tech news with AI-powered insights, curated discussions, and audio podcasts.
+                    </p>
+                    
+                    <!-- Weekly Podcast Player -->
+                    <div class="bg-white/20 backdrop-blur-sm rounded-lg p-4 mb-6">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                                    🎙️
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">Weekly Podcast</h3>
+                                <p class="text-orange-100 text-sm">Latest episode generated {{ current_date }}</p>
+                                <audio controls class="w-full mt-2" preload="metadata">
+                                    <source src="/audio_files/hn_daily_{{ current_date_file }}.mp3" type="audio/mpeg">
+                                    <source src="/audio_files/pookie_b_weekly_latest.mp3" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-4">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4">Quick Stats</h3>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.total_articles or 0 }}</div>
+                                <div class="text-sm text-orange-200">Articles</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.total_comments or 0 }}</div>
+                                <div class="text-sm text-orange-200">Comments</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.avg_score|round|int or 0 }}</div>
+                                <div class="text-sm text-orange-200">Avg Score</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold">{{ stats.unique_domains or 0 }}</div>
+                                <div class="text-sm text-orange-200">Domains</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Today's Articles Section -->
+    {% if todays_articles %}
+    <section class="mb-8 slide-in">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white headline flex items-center gap-2">
+                    🆕 Today's Articles
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                        ({{ todays_articles|length }} articles scraped today)
+                    </span>
+                </h2>
+            </div>
+            
+            <div class="space-y-4">
+                {% for article in todays_articles %}
+                <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                    <div class="p-6">
+                        <!-- Article Header with Score -->
+                        <div class="flex items-start gap-4 mb-4">
+                            <!-- Score Column (HN-style) -->
+                            <div class="flex-shrink-0 text-center">
+                                {% if article.score is defined and article.score > 0 %}
+                                <div class="flex flex-col items-center space-y-1">
+                                    <div class="text-hn-orange text-sm font-bold">▲</div>
+                                    <div class="text-lg font-bold text-gray-700 dark:text-gray-300">{{ article.score }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">points</div>
+                                </div>
+                                {% else %}
+                                <div class="flex flex-col items-center space-y-1">
+                                    <div class="text-gray-400 text-sm">▲</div>
+                                    <div class="text-lg font-bold text-gray-400">-</div>
+                                    <div class="text-xs text-gray-400">points</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Article Content -->
+                            <div class="flex-1 min-w-0">
+                                <!-- Title -->
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                                    <a href="/article/{{ article.hn_id }}" class="hover:text-hn-orange transition-colors">
+                                        {{ article.title }}
+                                    </a>
+                                </h2>
+                                
+                                <!-- Metadata Row -->
+                                <div class="flex flex-wrap items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
+                                    <!-- Domain -->
+                                    {% if article.domain %}
+                                    <span class="inline-flex items-center bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                                        🌐 {{ article.domain }}
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Author -->
+                                    {% if article.author %}
+                                    <span class="inline-flex items-center">
+                                        👤 by {{ article.author }}
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Comments -->
+                                    {% if article.descendants is defined and article.descendants > 0 %}
+                                    <span class="inline-flex items-center">
+                                        💬 {{ article.descendants }} comments
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Time Information -->
+                                    {% if article.scraped_at %}
+                                    <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
+                                        ⏰ Scraped {{ article.scraped_at[:16].replace('T', ' at ') }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Article Summary/Text Preview -->
+                                {% if article.story_text and article.story_text|length > 10 %}
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {{ article.story_text[:300] }}{% if article.story_text|length > 300 %}...{% endif %}
+                                    </p>
+                                </div>
+                                {% elif article.summary and article.summary|length > 10 %}
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {{ article.summary }}
+                                    </p>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Action Buttons -->
+                                <div class="flex items-center gap-3 pt-2">
+                                    <a href="{{ article.url }}" target="_blank" 
+                                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-hn-orange border border-hn-orange rounded-md hover:bg-hn-orange hover:text-white transition-colors">
+                                        🔗 Read Article
+                                    </a>
+                                    
+                                    <a href="https://news.ycombinator.com/item?id={{ article.hn_id }}" target="_blank"
+                                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        🗨️ HN Discussion
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Best Articles Section -->
+    {% if best_articles %}
+    <section class="mb-8 slide-in">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white headline flex items-center gap-2">
+                    🏆 Best Articles
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                        (Top {{ best_articles|length }} highest scoring)
+                    </span>
+                </h2>
+            </div>
+            
+            <div class="space-y-4">
+                {% for article in best_articles %}
+                <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                    <div class="p-6">
+                        <!-- Article Header with Score -->
+                        <div class="flex items-start gap-4 mb-4">
+                            <!-- Score Column (HN-style) -->
+                            <div class="flex-shrink-0 text-center">
+                                {% if article.score is defined and article.score > 0 %}
+                                <div class="flex flex-col items-center space-y-1">
+                                    <div class="text-hn-orange text-sm font-bold">▲</div>
+                                    <div class="text-lg font-bold text-gray-700 dark:text-gray-300">{{ article.score }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">points</div>
+                                </div>
+                                {% else %}
+                                <div class="flex flex-col items-center space-y-1">
+                                    <div class="text-gray-400 text-sm">▲</div>
+                                    <div class="text-lg font-bold text-gray-400">-</div>
+                                    <div class="text-xs text-gray-400">points</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Article Content -->
+                            <div class="flex-1 min-w-0">
+                                <!-- Title -->
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                                    <a href="/article/{{ article.hn_id }}" class="hover:text-hn-orange transition-colors">
+                                        {{ article.title }}
+                                    </a>
+                                </h2>
+                                
+                                <!-- Metadata Row -->
+                                <div class="flex flex-wrap items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
+                                    <!-- Domain -->
+                                    {% if article.domain %}
+                                    <span class="inline-flex items-center bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                                        🌐 {{ article.domain }}
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Author -->
+                                    {% if article.author %}
+                                    <span class="inline-flex items-center">
+                                        👤 by {{ article.author }}
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Comments -->
+                                    {% if article.descendants is defined and article.descendants > 0 %}
+                                    <span class="inline-flex items-center">
+                                        💬 {{ article.descendants }} comments
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Rank -->
+                                    {% if article.rank is defined and article.rank > 0 %}
+                                    <span class="inline-flex items-center bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-md">
+                                        #{{ article.rank }} best
+                                    </span>
+                                    {% endif %}
+                                    
+                                    <!-- Time Information -->
+                                    {% if article.scraped_at %}
+                                    <span class="inline-flex items-center text-xs text-gray-500 dark:text-gray-500">
+                                        ⏰ Scraped {{ article.scraped_at[:16].replace('T', ' at ') }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Article Summary/Text Preview -->
+                                {% if article.story_text and article.story_text|length > 10 %}
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {{ article.story_text[:300] }}{% if article.story_text|length > 300 %}...{% endif %}
+                                    </p>
+                                </div>
+                                {% elif article.summary and article.summary|length > 10 %}
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {{ article.summary }}
+                                    </p>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Action Buttons -->
+                                <div class="flex items-center gap-3 pt-2">
+                                    <a href="{{ article.url }}" target="_blank" 
+                                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-hn-orange border border-hn-orange rounded-md hover:bg-hn-orange hover:text-white transition-colors">
+                                        🔗 Read Article
+                                    </a>
+                                    
+                                    <a href="https://news.ycombinator.com/item?id={{ article.hn_id }}" target="_blank"
+                                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        🗨️ HN Discussion
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- No Articles Found -->
+    {% if not best_articles and not todays_articles %}
+    <section class="mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <div class="max-w-md mx-auto">
+                <div class="text-6xl mb-4">📰</div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No articles found</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">
+                    The scraper hasn't collected any articles yet. Check back later or try refreshing the page.
+                </p>
+                <button onclick="window.location.reload()" 
+                        class="inline-flex items-center px-4 py-2 bg-hn-orange text-white rounded-lg hover:bg-hn-orange-dark transition-colors">
+                    🔄 Refresh Page
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Statistics and Additional Content -->
+    {% if popular_stories %}
+    <section class="mb-8 slide-in">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">📈 Popular Stories</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for story in popular_stories[:6] %}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-2">{{ story.title }}</h3>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>{{ story.score }} points</span>
+                        <span>•</span>
+                        <span>{{ story.descendants }} comments</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if reddit_posts %}
+    <section class="mb-8 slide-in">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">🔍 Reddit OutOfTheLoop</h2>
+            <div class="space-y-3">
+                {% for post in reddit_posts[:5] %}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-medium text-gray-900 dark:text-white mb-1">{{ post.title }}</h3>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>{{ post.score }} upvotes</span>
+                        <span>•</span>
+                        <span>{{ post.num_comments }} comments</span>
+                        <span>•</span>
+                        <a href="{{ post.url }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                            View on Reddit
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<script>
+    // Smooth scrolling for navigation
+    function scrollToArticles() {
+        document.querySelector('.slide-in').scrollIntoView({ 
+            behavior: 'smooth' 
+        });
+    }
+    
+    // Add fade-in animations
+    document.addEventListener('DOMContentLoaded', function() {
+        const elements = document.querySelectorAll('.fade-in, .slide-in');
+        elements.forEach((el, index) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

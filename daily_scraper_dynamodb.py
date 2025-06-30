@@ -30,13 +30,14 @@ class HNScrapperDynamoDB:
         return None
     
     def get_top_stories(self, limit: int = 100) -> List[int]:
-        """Get top story IDs from HN."""
+        """Get best story IDs from HN (highest scored articles)."""
         try:
-            response = requests.get(f"{self.base_url}/topstories.json", timeout=10)
+            url = f"{self.base_url}/beststories.json"
+            response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 return response.json()[:limit]
         except Exception as e:
-            print(f"Error fetching top stories: {e}")
+            print(f"Error fetching best stories: {e}")
         return []
     
     def extract_domain(self, url: str) -> str:

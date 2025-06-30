@@ -35,7 +35,7 @@ fastapi_*.py
 *_backup.py
 conversation_analyzer*.py
 conv_analyzer*.py
-enhanced_hn_scraper.py
+hn_scraper.py
 scrapper.py
 hn_scraper.py
 

@@ -749,20 +749,30 @@ def home():
             recent_daily = daily_generator.get_recent_episodes(1)
             if recent_daily and recent_daily[0].get('date') == today:
                 today_episode = recent_daily[0]
-                # Ensure audio path is accessible via URL
+                # Ensure audio path or url is accessible via /audio
                 if today_episode.get('audio_path'):
                     audio_filename = today_episode['audio_path'].split('/')[-1]
                     today_episode['audio_url'] = f'/audio/{audio_filename}'
-            
+                elif today_episode.get('audio_url'):
+                    au = today_episode['audio_url']
+                    if au.startswith('file://'):
+                        audio_filename = au.split('/')[-1]
+                        today_episode['audio_url'] = f'/audio/{audio_filename}'
+
             # Weekly podcast
             weekly_generator = WeeklyPodcastGenerator()
             recent_weekly = weekly_generator.get_recent_weekly_episodes(1)
             if recent_weekly:
                 weekly_episode = recent_weekly[0]
-                # Ensure audio path is accessible via URL
+                # Ensure audio path or url is accessible via /audio
                 if weekly_episode.get('audio_path'):
                     audio_filename = weekly_episode['audio_path'].split('/')[-1]
                     weekly_episode['audio_url'] = f'/audio/{audio_filename}'
+                elif weekly_episode.get('audio_url'):
+                    au = weekly_episode['audio_url']
+                    if au.startswith('file://'):
+                        audio_filename = au.split('/')[-1]
+                        weekly_episode['audio_url'] = f'/audio/{audio_filename}'
         except Exception as e:
             print(f"Error getting podcast episodes: {e}")
         

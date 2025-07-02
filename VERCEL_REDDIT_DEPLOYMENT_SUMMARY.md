@@ -18,7 +18,7 @@
 
 ### 🌐 **Vercel Deployment**  
 - ✅ **Successfully Deployed**: Application is live on Vercel
-- ✅ **Updated Dependencies**: Added PRAW to `requirements-vercel.txt`
+- ✅ **Updated Dependencies**: Added PRAW and pandas to `requirements-vercel.txt`
 - ✅ **Serverless Functions**: All endpoints working in serverless environment
 - ✅ **Reddit Manager**: Lightweight Reddit integration for serverless
 
@@ -114,8 +114,8 @@ Sample posts: 2
 
 ### ✏️ **Modified Files**  
 - `api/index.py` - Enhanced with Reddit integration and dual-layout homepage
-- `requirements-vercel.txt` - Added PRAW dependency
-- `requirements.txt` - Added PRAW dependency
+- `requirements-vercel.txt` - Added PRAW and pandas dependencies
+- `requirements.txt` - Added PRAW and pandas dependencies
 
 ---
 

@@ -156,6 +156,9 @@ Add monitoring services like:
 2. **Database connection**: Verify DATABASE_URL
 3. **Deployment failures**: Check Vercel logs
 4. **Cron job failures**: Verify GitHub secrets
+5. **Missing packages**: If functions fail with `ModuleNotFoundError`, ensure the
+   package is listed in both `requirements-vercel.txt` and `requirements.txt`
+   (e.g. `pandas` for scraping)
 
 ### Debug Commands
 ```bash

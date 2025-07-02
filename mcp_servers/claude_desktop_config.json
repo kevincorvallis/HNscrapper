@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "pookie-b-dynamodb": {
+      "command": "/Users/kle/Downloads/HNscrapper/venv/bin/python",
+      "args": ["/Users/kle/Downloads/HNscrapper/mcp_servers/dynamodb_server.py"],
+      "env": {
+        "PYTHONPATH": "/Users/kle/Downloads/HNscrapper"
+      }
+    },
+    "pookie-b-scraper": {
+      "command": "/Users/kle/Downloads/HNscrapper/venv/bin/python",
+      "args": ["/Users/kle/Downloads/HNscrapper/mcp_servers/scraper_server.py"],
+      "env": {
+        "PYTHONPATH": "/Users/kle/Downloads/HNscrapper"
+      }
+    }
+  }
+}

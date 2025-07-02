@@ -433,38 +433,13 @@ class DynamoDBManager:
             print(f"❌ Error deleting article {hn_id}: {str(e)}")
             return False
     
-    def delete_comment(self, comment_id: str, article_id: str = None) -> bool:
-        """Delete a comment by comment ID. If article_id not provided, will scan to find it."""
+    def delete_comment(self, comment_id: str) -> bool:
+        """Delete a comment by its ID."""
         try:
-            if article_id:
-                # Direct delete if we have both keys
-                response = self.comments_table.delete_item(
-                    Key={
-                        'article_id': article_id,
-                        'comment_id': comment_id
-                    }
-                )
-                return True
-            else:
-                # Need to find the article_id first
-                response = self.comments_table.scan(
-                    FilterExpression='comment_id = :cid',
-                    ExpressionAttributeValues={':cid': comment_id}
-                )
-                
-                if response['Items']:
-                    item = response['Items'][0]
-                    response = self.comments_table.delete_item(
-                        Key={
-                            'article_id': item['article_id'],
-                            'comment_id': comment_id
-                        }
-                    )
-                    return True
-                else:
-                    print(f"❌ Comment {comment_id} not found")
-                    return False
-                    
+            self.comments_table.delete_item(
+                Key={'comment_id': str(comment_id)}
+            )
+            return True
         except Exception as e:
             print(f"❌ Error deleting comment {comment_id}: {str(e)}")
             return False
@@ -494,7 +469,7 @@ class DynamoDBManager:
                 )
                 
                 for item in response['Items']:
-                    if self.delete_comment(item['comment_id'], item['article_id']):
+                    if self.delete_comment(item['comment_id']):
                         comments_cleaned += 1
             
             print(f"🧹 Cleaned up {articles_cleaned} test articles and {comments_cleaned} test comments")

@@ -297,6 +297,31 @@ class DynamoDBManager:
             print(f"Error getting articles: {e}")
             return []
     
+    def get_best_articles(self, limit: int = 20) -> List[Dict]:
+        """Get the highest-scoring articles (best articles)."""
+        try:
+            response = self.articles_table.scan()
+            
+            articles = response.get('Items', [])
+            
+            # Sort by score in descending order
+            articles_sorted = sorted(
+                articles,
+                key=lambda x: int(x.get('score', 0)),
+                reverse=True
+            )
+            
+            return articles_sorted[:limit]
+            
+        except Exception as e:
+            print(f"Error getting best articles: {e}")
+            return []
+    
+    def get_todays_articles(self, limit: int = 20) -> List[Dict]:
+        """Get today's articles."""
+        today = datetime.now().strftime('%Y-%m-%d')
+        return self.get_articles_by_date(today, limit)
+
     def get_article(self, hn_id: str) -> Optional[Dict]:
         """Get a single article by ID."""
         try:

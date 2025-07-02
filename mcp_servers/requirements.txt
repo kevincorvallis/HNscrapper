@@ -1,0 +1,10 @@
+# MCP Server Dependencies for Pookie B News Daily
+mcp==1.0.0
+asyncio
+aiohttp
+requests
+beautifulsoup4
+textstat
+nltk
+openai
+anthropic

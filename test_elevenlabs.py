@@ -1,39 +1,23 @@
-"""
-Simple test to verify ElevenLabs API key and connection
-"""
-
 import os
+import unittest
 from dotenv import load_dotenv
 from elevenlabs.client import ElevenLabs
 
-# Load environment variables
 load_dotenv()
 
-def test_api_key():
-    """Test the ElevenLabs API key"""
-    api_key = os.environ.get('ELEVENLABS_API_KEY')
-    print(f"API Key loaded: {api_key is not None}")
-    
-    if api_key:
-        print(f"API Key format: {'sk_' in api_key}")
-        print(f"API Key length: {len(api_key)}")
-        
-        try:
-            client = ElevenLabs(api_key=api_key)
-            print("Client created successfully")
-            
-            # Try a simple API call
-            voices = client.voices.get_all()
-            print(f"✅ API working! Found {len(voices.voices)} voices")
-            
-            # Show first few voices
-            for voice in voices.voices[:3]:
-                print(f"  - {voice.name} ({voice.voice_id})")
-                
-        except Exception as e:
-            print(f"❌ API Error: {str(e)}")
-    else:
-        print("❌ No API key found")
+@unittest.skipIf(not os.environ.get("ELEVENLABS_API_KEY"), "ELEVENLABS_API_KEY not set")
+class TestElevenLabsClient(unittest.TestCase):
+    """Tests for the ElevenLabs client."""
+
+    def setUp(self):
+        self.api_key = os.environ.get("ELEVENLABS_API_KEY")
+        self.client = ElevenLabs(api_key=self.api_key)
+
+    def test_client_creation_and_voices(self):
+        """Client initializes and returns at least one available voice."""
+        voices = self.client.voices.get_all()
+        self.assertTrue(voices.voices, "No voices returned from API")
+
 
 if __name__ == "__main__":
-    test_api_key()
+    unittest.main()

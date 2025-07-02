@@ -778,7 +778,10 @@ def home():
         # Generate daily briefing text
         briefing_text = generate_daily_briefing(articles, current_date)
         
-        return render_template('index_homepage.html',
+        # Use the simplified index template since index_homepage.html was
+        # removed in a previous cleanup commit. This restores the homepage on
+        # Vercel deployments.
+        return render_template('index.html',
                              articles=articles,
                              stats=stats,
                              today_episode=today_episode,

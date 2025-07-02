@@ -512,21 +512,36 @@ def api_combined():
             except Exception as e:
                 print(f"Popular stories API error: {e}")
         
-        # Combine data
-        combined_content = {
-            'hn_articles': hn_articles,
-            'reddit_posts': reddit_posts,
-            'popular_stories': popular_stories,
-            'combined_count': len(hn_articles) + len(reddit_posts) + len(popular_stories),
-            'sources': ['HackerNews', 'Reddit-OutOfTheLoop', 'HN-Popular'],
-            'generated_at': datetime.now().isoformat()
-        }
+        # Get search parameters
+        search_query = request.args.get('search', '')
+        domain_filter = request.args.get('domain', 'all')
+        view_mode = request.args.get('view', 'articles')
         
-        return jsonify({
-            'success': True,
-            'data': combined_content,
-            'platform': 'Vercel Serverless'
-        })
+        # Get current time and date for display
+        current_time = datetime.now().strftime('%I:%M %p')
+        current_date = datetime.now().strftime('%A, %B %d, %Y')
+        
+        # Generate daily briefing text
+        briefing_text = generate_daily_briefing(articles, current_date)
+        
+        # Use the simplified index template since index_homepage.html was
+        # removed in a previous cleanup commit. This restores the homepage on
+        # Vercel deployments.
+        return render_template('index.html',
+                             articles=articles,
+                             stats=stats,
+                             today_episode=today_episode,
+                             weekly_episode=weekly_episode,
+                             current_time=current_time,
+                             current_date=current_date,
+                             briefing_text=briefing_text,
+                             search_query=search_query,
+                             domain_filter=domain_filter,
+                             view_mode=view_mode,
+                             sort_by=sort_by,
+                             domains=stats.get('domains', []),
+                             curator_available=bool(os.environ.get('OPENAI_API_KEY')))
+    
     except Exception as e:
         return jsonify({
             'success': False,

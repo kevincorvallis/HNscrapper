@@ -311,9 +311,10 @@ class DynamoDBManager:
     def get_article_comments(self, article_id: str) -> List[Dict]:
         """Get all comments for an article."""
         try:
-            # Since we don't have a GSI, we'll use scan with filter
-            response = self.comments_table.scan(
-                FilterExpression='article_id = :article_id',
+            # Use the article-id-index GSI for efficient lookup
+            response = self.comments_table.query(
+                IndexName='article-id-index',
+                KeyConditionExpression='article_id = :article_id',
                 ExpressionAttributeValues={
                     ':article_id': str(article_id)
                 }

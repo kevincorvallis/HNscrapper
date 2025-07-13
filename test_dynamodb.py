@@ -6,6 +6,7 @@ Test DynamoDB connection and basic operations.
 from dynamodb_manager import DynamoDBManager
 import os
 from dotenv import load_dotenv
+import pytest
 
 load_dotenv()
 
@@ -22,7 +23,7 @@ def test_dynamodb():
     if not aws_region or not aws_key:
         print("❌ AWS credentials not found in environment variables")
         print("Please check your .env file")
-        return False
+        pytest.skip("AWS credentials missing")
         
     print(f"AWS Region: {aws_region}")
     print(f"AWS Access Key ID: {aws_key[:10]}...")
@@ -35,8 +36,7 @@ def test_dynamodb():
         
         # Test connection
         print("🔍 Testing connection...")
-        if not db.test_connection():
-            return False
+        assert db.test_connection(), "DynamoDB connection failed"
         
         # Test getting stats
         print("📊 Getting current database stats...")
@@ -79,20 +79,19 @@ def test_dynamodb():
             print(f"Test article exists: {exists}")
             
             print("\n🎉 All DynamoDB tests passed!")
-            return True
         else:
             print("❌ Failed to save test article")
-            return False
+            assert False, "save_article failed"
             
     except Exception as e:
         print(f"❌ Test failed: {str(e)}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"Exception occurred: {e}"
 
 if __name__ == "__main__":
-    success = test_dynamodb()
-    if success:
+    try:
+        test_dynamodb()
         print("\n✅ DynamoDB is ready for use!")
-    else:
+    except AssertionError:
         print("\n❌ DynamoDB setup needs attention.")

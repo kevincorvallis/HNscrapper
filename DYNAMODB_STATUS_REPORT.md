@@ -95,7 +95,7 @@ gh secret set VERCEL_SCRAPE_URL --body "https://your-vercel-domain.vercel.app"
 ### **Option 2: Set Up Local Cron Job**
 ```bash
 # Add to crontab (runs daily at 2 AM)
-echo "0 2 * * * cd /Users/kle/Downloads/HNscrapper && python daily_scraper_dynamodb.py" | crontab -
+0 2 * * * /Users/kle/Downloads/HNscrapper/daily_scraper_cron.sh
 ```
 
 ### **Option 3: Manual Daily Runs**

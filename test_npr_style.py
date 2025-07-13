@@ -3,12 +3,18 @@
 Test NPR-style script generation and TTS with custom voice
 """
 
-from tts_generator import TTSGenerator
 import os
+import pytest
+
+try:
+    from tts_generator import TTSGenerator
+except Exception as e:  # pragma: no cover - optional dependency
+    pytest.skip(f"elevenlabs not available: {e}", allow_module_level=True)
+
 
 def test_npr_style_podcast():
     """Test the NPR-style podcast generation with Beryl."""
-    
+
     # Sample NPR-style script with Beryl
     npr_script = """Good morning, I'm Beryl, and this is your daily tech briefing. Today we're examining three significant developments that are shaping the technology landscape.
 
@@ -24,26 +30,28 @@ That's your technology briefing for today. I'm Beryl. These three stories reflec
     print("=" * 50)
     print(f"📝 Script length: {len(npr_script.split())} words")
     print(f"🎯 Estimated duration: ~{len(npr_script.split()) / 180 * 60:.1f} seconds")
-    
+
     # Test TTS generation
     try:
         tts = TTSGenerator()
         print(f"✅ TTS initialized with voice: {tts.voice_id}")
-        
+
         print("🎵 Generating NPR-style audio...")
         audio_path = tts.generate_speech(
-            text=npr_script,
-            output_filename="beryl_npr_test.mp3"
+            text=npr_script, output_filename="beryl_npr_test.mp3"
         )
-        
+
         if audio_path:
             print(f"✅ NPR-style audio generated: {audio_path}")
-            print(f"🎧 Your custom voice Beryl is now ready for NPR-style tech briefings!")
+            print(
+                f"🎧 Your custom voice Beryl is now ready for NPR-style tech briefings!"
+            )
         else:
             print("❌ Audio generation failed")
-            
+
     except Exception as e:
         print(f"❌ TTS test failed: {e}")
+
 
 if __name__ == "__main__":
     test_npr_style_podcast()

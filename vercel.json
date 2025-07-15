@@ -20,6 +20,10 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/api/scrape",
+      "dest": "/api/scrape.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.py"
     }

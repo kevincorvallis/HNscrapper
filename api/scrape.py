@@ -11,51 +11,32 @@ import requests
 from datetime import datetime
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+from flask import Flask, request, jsonify
 
-def handler(request):
-    """Vercel function handler for scraping."""
-    
-    # Verify authorization
+app = Flask(__name__)
+# Alias for Vercel's Python runtime which looks for `handler`
+handler = app
+
+
+@app.post('/')
+def scrape_endpoint():
+    """Endpoint for scraping Hacker News articles."""
+
     auth_header = request.headers.get('Authorization', '')
     expected_auth = f"Bearer {os.environ.get('CRON_SECRET', 'default-secret')}"
-    
+
     if auth_header != expected_auth:
-        return {
-            'statusCode': 401,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Unauthorized'})
-        }
-    
+        return jsonify({'error': 'Unauthorized'}), 401
+
     try:
-        if request.method == 'POST':
-            # Trigger scraping
-            results = scrape_hn_articles()
-            
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({
-                    'success': True,
-                    'articles_scraped': len(results),
-                    'timestamp': datetime.now().isoformat()
-                })
-            }
-        else:
-            return {
-                'statusCode': 405,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Method not allowed'})
-            }
-            
+        results = scrape_hn_articles()
+        return jsonify({
+            'success': True,
+            'articles_scraped': len(results),
+            'timestamp': datetime.now().isoformat()
+        })
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({
-                'success': False,
-                'error': str(e)
-            })
-        }
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 def scrape_hn_articles(limit=20):
     """Scrape HN articles for serverless environment."""
@@ -159,10 +140,9 @@ def store_articles(articles):
 
 # For local testing
 if __name__ == "__main__":
-    class MockRequest:
-        def __init__(self):
-            self.method = 'POST'
-            self.headers = {'Authorization': f"Bearer {os.environ.get('CRON_SECRET', 'test')}"}
-    
-    result = handler(MockRequest())
-    print(json.dumps(result, indent=2))
+    with app.test_client() as client:
+        response = client.post(
+            '/',
+            headers={'Authorization': f"Bearer {os.environ.get('CRON_SECRET', 'test')}"}
+        )
+        print(json.dumps(response.get_json(), indent=2))

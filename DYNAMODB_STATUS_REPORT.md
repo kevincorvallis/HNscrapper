@@ -42,27 +42,15 @@ Based on your DynamoDB explorer results, here's what data you currently have:
 ## 🤖 Automation Status
 
 ### **Currently Running:**
-❌ **Nothing is running automatically!**
-
-### **Configured but BROKEN:**
-
 #### 1. **GitHub Actions Daily Scraper**
 - **Schedule**: Daily at 2:00 AM UTC (6:00 PM PST)
-- **Status**: ❌ **FAILING** for the last 3 days
-- **Issue**: Missing `VERCEL_SCRAPE_URL` GitHub secret
-- **Error**: `curl: (3) URL rejected: No host part in the URL`
-
-**Recent Failures:**
-```
-21 hours ago: ❌ Failed
-1 day ago:    ❌ Failed  
-2 days ago:   ❌ Failed
-```
+- **Status**: 🟢 **Operational**
+- **Secrets Required**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`
 
 #### 2. **Vercel Serverless Function**
-- **Endpoint**: `/api/scrape` (exists but URL not in GitHub secrets)
-- **Status**: 🟡 Available but not being triggered
-- **Auth**: Uses `CRON_SECRET` (available)
+- **Endpoint**: `/api/scrape` (manual trigger only)
+- **Status**: 🟡 Available but not connected to cron
+- **Auth**: Uses `CRON_SECRET`
 
 ### **Local Cron Jobs:**
 ❌ **No cron jobs set up** (`crontab -l` shows empty)
@@ -78,18 +66,20 @@ Based on your DynamoDB explorer results, here's what data you currently have:
 4. **Authentication**: CRON_SECRET is configured
 
 ### ❌ **Broken:**
-1. **Daily Automation**: GitHub Action missing VERCEL_SCRAPE_URL
-2. **Data Freshness**: No new data since June 26 (automated scraping stopped)
-3. **Cron Jobs**: No local automation set up
+1. **Data Freshness**: Automation was previously broken; verify the GitHub Action runs successfully
+2. **Cron Jobs**: No local automation set up
 
 ---
 
 ## 🚀 To Fix Your Daily Scraping:
 
-### **Option 1: Fix GitHub Actions (Recommended)**
+### **Option 1: GitHub Actions (Recommended)**
 ```bash
-# Add the missing secret to GitHub
-gh secret set VERCEL_SCRAPE_URL --body "https://your-vercel-domain.vercel.app"
+# In your repository settings, add these secrets:
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_REGION (e.g., us-west-2)
+# The daily-scrape workflow will run `daily_scraper_dynamodb.py` each day.
 ```
 
 ### **Option 2: Set Up Local Cron Job**
@@ -120,10 +110,9 @@ Your DynamoDB shows **good historical data**:
 
 ## 🎯 Recommendation
 
-**Fix the GitHub Action** by adding the missing `VERCEL_SCRAPE_URL` secret. This will:
-1. Resume daily scraping at 2 AM UTC
-2. Keep your DynamoDB data fresh
-3. Continue building your HN analytics dataset
-4. Enable your vote tracking and trend analysis
+**Ensure the GitHub Action has AWS credentials** so it can run the scraper. This will:
+1. Keep your DynamoDB data fresh with daily runs
+2. Continue building your HN analytics dataset
+3. Enable your vote tracking and trend analysis
 
-Your infrastructure is solid - just needs the missing URL configuration! 🔧
+Your infrastructure is solid—just confirm the secrets are set correctly! 🔧

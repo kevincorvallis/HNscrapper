@@ -9,17 +9,24 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    
+
+    env:
+      AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
+      AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+      AWS_REGION: '${{ secrets.AWS_REGION }}'
+
     steps:
-    - name: Trigger Vercel scraping function
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
       run: |
-        curl -X POST "${{ secrets.VERCEL_SCRAPE_URL }}/api/scrape" \
-          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-          -H "Content-Type: application/json" \
-          --fail \
-          --silent \
-          --show-error
-        
+        pip install -r requirements.txt
+    - name: Run DynamoDB scraper
+      run: |
+        python daily_scraper_dynamodb.py
+
     - name: Notify on failure
       if: failure()
       run: |

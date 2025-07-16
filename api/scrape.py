@@ -27,7 +27,6 @@ def scrape_endpoint():
 
     if auth_header != expected_auth:
         return jsonify({'error': 'Unauthorized'}), 401
-
     try:
         results = scrape_hn_articles()
         return jsonify({

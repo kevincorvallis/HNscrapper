@@ -1067,7 +1067,13 @@ def serve_audio(filename):
     except Exception as e:
         return jsonify({'error': f'Audio file not found: {e}'}), 404
 
-# Vercel requires the app to be named 'app'
+# Export the Flask app for Vercel
+# This must be the last line of the file
+if __name__ == '__main__':
+    app.run(debug=True)
+else:
+    # For Vercel deployment
+    application = app
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=True)

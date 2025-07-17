@@ -51,7 +51,19 @@ USE_DYNAMODB = (
 )
 
 # Database path for SQLite fallback
-DB_PATH = '/tmp/enhanced_hn_articles.db' if os.environ.get('VERCEL') else 'enhanced_hn_articles.db'
+DB_PATH = os.environ.get(
+    'DB_PATH',
+    '/tmp/enhanced_hn_articles.db' if os.environ.get('VERCEL') else 'enhanced_hn_articles.db'
+)
+
+# If DB_PATH missing or empty, fall back to bundled backup if available
+if not USE_DYNAMODB and (
+    not os.path.exists(DB_PATH) or os.path.getsize(DB_PATH) == 0
+):
+    for fname in os.listdir('.'):
+        if fname.startswith('enhanced_hn_articles.db') and 'backup' in fname:
+            DB_PATH = fname
+            break
 
 print(f"Database mode: {'DynamoDB' if USE_DYNAMODB else 'SQLite'}")
 print(f"SQLite path: {DB_PATH if not USE_DYNAMODB else 'N/A'}")
@@ -61,7 +73,8 @@ class DatabaseManager:
     
     def __init__(self, use_dynamodb: bool = False, db_path: str = None):
         self.use_dynamodb = use_dynamodb
-        self.db_path = db_path
+        # Fall back to global DB_PATH if none provided
+        self.db_path = db_path or DB_PATH
         
         if self.use_dynamodb:
             self.dynamo_db = DynamoDBManager()

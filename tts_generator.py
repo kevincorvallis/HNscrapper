@@ -10,8 +10,13 @@ import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 from pathlib import Path
-from elevenlabs.client import ElevenLabs
-from elevenlabs import stream
+try:
+    # For versions <1.0 use high-level generate/save helpers
+    from elevenlabs import generate, save
+    ELEVENLABS_MODERN = False
+except Exception:  # pragma: no cover - fallback for newer versions
+    from elevenlabs.client import ElevenLabs
+    ELEVENLABS_MODERN = True
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
@@ -31,7 +36,10 @@ class TTSGenerator:
         if not self.api_key:
             raise ValueError("ELEVENLABS_API_KEY environment variable not set")
         
-        self.client = ElevenLabs(api_key=self.api_key)
+        if ELEVENLABS_MODERN:
+            self.client = ElevenLabs(api_key=self.api_key)
+        else:
+            self.client = None
         
         # Default voice settings - Custom voice for Beryl narrator
         self.voice_id = "EaS81u0gurcdfMeSxlCk"  # Custom voice (Beryl)
@@ -49,12 +57,18 @@ class TTSGenerator:
     def list_available_voices(self) -> list:
         """Get list of available voices from ElevenLabs"""
         try:
-            response = self.client.voices.get_all()
+            if ELEVENLABS_MODERN:
+                response = self.client.voices.get_all()
+                raw_voices = response.voices
+            else:
+                from elevenlabs import voices
+                raw_voices = voices().voices
+
             voice_list = []
-            for voice in response.voices:
+            for voice in raw_voices:
                 voice_list.append({
-                    "id": voice.voice_id,
-                    "name": voice.name,
+                    "id": getattr(voice, 'voice_id', getattr(voice, 'id', '')),
+                    "name": getattr(voice, 'name', 'Unknown'),
                     "category": getattr(voice, 'category', 'Unknown'),
                     "description": getattr(voice, 'description', 'No description')
                 })
@@ -92,25 +106,34 @@ class TTSGenerator:
             
             logger.info(f"Generating speech for {len(text)} characters using voice {selected_voice}")
             
-            # Generate audio using the client's text_to_speech method
-            audio_response = self.client.text_to_speech.convert(
-                voice_id=selected_voice,
-                text=text,
-                model_id="eleven_multilingual_v2",  # High quality model
-                voice_settings={
-                    **self.voice_settings,
-                    "stability": 0.6,
-                    "similarity_boost": 0.8,
-                    "style": 0.3,  # More expressive
-                    "use_speaker_boost": True
-                },
-                output_format="mp3_44100_128"  # Higher quality, faster delivery
-            )
-            
-            # Save to file
-            with open(output_path, "wb") as f:
-                for chunk in audio_response:
-                    f.write(chunk)
+            if ELEVENLABS_MODERN:
+                audio_response = self.client.text_to_speech.convert(
+                    voice_id=selected_voice,
+                    text=text,
+                    model_id="eleven_multilingual_v2",
+                    voice_settings={
+                        **self.voice_settings,
+                        "stability": 0.6,
+                        "similarity_boost": 0.8,
+                        "style": 0.3,
+                        "use_speaker_boost": True,
+                    },
+                    output_format="mp3_44100_128",
+                )
+
+                with open(output_path, "wb") as f:
+                    for chunk in audio_response:
+                        f.write(chunk)
+            else:
+                audio = generate(
+                    text=text,
+                    voice=selected_voice,
+                    model="eleven_monolingual_v1",
+                    api_key=self.api_key,
+                    output_format="mp3_44100_128",
+                )
+                with open(output_path, "wb") as f:
+                    f.write(audio)
             
             logger.info(f"Audio saved to: {output_path}")
             return str(output_path)
@@ -171,16 +194,25 @@ class TTSGenerator:
         (Useful for tracking usage against monthly limits)
         """
         try:
-            user_info = self.client.user.get()
-            subscription = getattr(user_info, 'subscription', None)
-            if subscription:
-                return {
-                    "characters_used": getattr(subscription, 'character_count', 0),
-                    "character_limit": getattr(subscription, 'character_limit', 0),
-                    "can_extend_character_limit": getattr(subscription, 'can_extend_character_limit', False)
-                }
+            if ELEVENLABS_MODERN:
+                user_info = self.client.user.get()
+                subscription = getattr(user_info, 'subscription', None)
+                if subscription:
+                    return {
+                        "characters_used": getattr(subscription, 'character_count', 0),
+                        "character_limit": getattr(subscription, 'character_limit', 0),
+                        "can_extend_character_limit": getattr(subscription, 'can_extend_character_limit', False)
+                    }
+                else:
+                    return {"error": "No subscription information available"}
             else:
-                return {"error": "No subscription information available"}
+                from elevenlabs import user
+                sub = user.Subscription.from_api()
+                return {
+                    "characters_used": sub.character_count,
+                    "character_limit": sub.character_limit,
+                    "can_extend_character_limit": sub.can_extend_character_limit
+                }
         except Exception as e:
             logger.error(f"Error getting character count: {str(e)}")
             return {}

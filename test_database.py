@@ -5,11 +5,18 @@ Test script to verify the daily scraper database
 
 import sqlite3
 import sys
+import os
 
 def test_database():
     try:
         # Connect to database
-        conn = sqlite3.connect('enhanced_hn_articles.db')
+        db_path = os.environ.get('DB_PATH', 'enhanced_hn_articles.db')
+        if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
+            for fname in os.listdir('.'):
+                if fname.startswith('enhanced_hn_articles.db') and 'backup' in fname:
+                    db_path = fname
+                    break
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         # Check articles table
